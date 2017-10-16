@@ -4,8 +4,12 @@ type TokenType int
 
 type Token struct {
 	Column, Row int
-	Type TokenType
-	TokenLiteral string
+	Type        TokenType
+	Literal     string
+}
+
+func (tok Token) String() string {
+	return tok.Literal
 }
 
 const (
@@ -16,4 +20,5 @@ const (
 	DIV
 	MUL
 	EOF
+	DIGIT
 )

@@ -29,8 +29,8 @@ func TestNextToken(t *testing.T) {
 			t.Fatalf("tests[%d] - Wrong TokenType expected=%d, got=%d", index, test.expectedType, tok.Type)
 		}
 
-		if tok.TokenLiteral != test.expectedLiteral {
-			t.Fatalf("tests[%d] - Wrong TokenLiteral expected=%s, got=%s", index, test.expectedLiteral, tok.TokenLiteral)
+		if tok.Literal != test.expectedLiteral {
+			t.Fatalf("tests[%d] - Wrong TokenLiteral expected=%s, got=%s", index, test.expectedLiteral, tok.Literal)
 		}
 
 		if tok.Column != test.expectedColumn {

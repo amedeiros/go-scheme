@@ -1,15 +1,17 @@
 package lexer
 
-import ("fmt")
+import (
+	"fmt"
+)
 
 type Lexer struct {
-	input string
+	input           string
 	row, column, sp int
-	currentChar rune
+	currentChar     rune
 }
 
 func NewLexer(input string) *Lexer {
-	lex := &Lexer{input: input, row: 0, column: -1 , sp: 0 }
+	lex := &Lexer{input: input, row: 0, column: -1, sp: 0}
 	lex.consume() // prime
 	return lex
 }
@@ -20,22 +22,27 @@ func (lexer *Lexer) NextToken() Token {
 
 	switch lexer.currentChar {
 	case '(':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: LPAREN, TokenLiteral: "(" }
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: LPAREN, Literal: "("}
 	case ')':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: RPAREN, TokenLiteral: ")"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: RPAREN, Literal: ")"}
 	case '+':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: ADD, TokenLiteral: "+"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: ADD, Literal: "+"}
 	case '-':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: SUB, TokenLiteral: "-"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: SUB, Literal: "-"}
 	case '*':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: MUL, TokenLiteral: "*"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: MUL, Literal: "*"}
 	case '/':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: DIV, TokenLiteral: "/"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: DIV, Literal: "/"}
 	case -1:
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: EOF, TokenLiteral: "EOF"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: EOF, Literal: "EOF"}
 	default:
-		msg, _ := fmt.Printf("Unkown character %c at %d:%d", lexer.currentChar, lexer.row, lexer.column)
-		panic(msg)
+		if isDigit(lexer.currentChar) {
+			literal := lexer.readNumber()
+			tok = Token{Column: lexer.column, Row: lexer.row, Type: DIGIT, Literal: literal}
+		} else {
+			msg, _ := fmt.Printf("Unkown character %c at %d:%d", lexer.currentChar, lexer.row, lexer.column)
+			panic(msg)
+		}
 	}
 
 	lexer.consume()
@@ -43,8 +50,24 @@ func (lexer *Lexer) NextToken() Token {
 	return tok
 }
 
+func isDigit(ch rune) bool {
+	return '0' <= ch && ch <= '9'
+}
+
+func (lexer *Lexer) readNumber() string {
+	position := lexer.sp
+
+	for isDigit(lexer.currentChar) {
+		lexer.consume()
+	}
+
+	return lexer.input[position:lexer.sp]
+}
+
 func (lexer *Lexer) consumeWS() {
-	for (isWhiteSpace(lexer.currentChar)) { lexer.consume() }
+	for isWhiteSpace(lexer.currentChar) {
+		lexer.consume()
+	}
 }
 
 func isWhiteSpace(char rune) bool {
@@ -56,7 +79,7 @@ func (lexer *Lexer) consume() {
 		lexer.currentChar = rune(lexer.input[lexer.sp])
 		lexer.sp += 1
 
-		if (lexer.currentChar == '\n') {
+		if lexer.currentChar == '\n' {
 			lexer.row += 1
 			lexer.column = -1
 		} else {
