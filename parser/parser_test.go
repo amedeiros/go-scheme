@@ -45,3 +45,20 @@ func TestParseString(t *testing.T) {
 		t.Fatalf("Expected %s got %s instead", input, program.Inspect())
 	}
 }
+
+func TestParseLambda(t *testing.T) {
+	tests := []struct {
+		input string
+	}{
+		{input: "(lambda (x y) (+ x y)"},
+	}
+
+	for _, test := range tests {
+		lex := lexer.NewLexer(test.input)
+		parse := NewParser(lex)
+		program := parse.ParseProgram()
+		if test.input != program.Inspect() {
+			t.Fatalf("Expected %s got %s instead", test.input, program.Inspect())
+		}
+	}
+}

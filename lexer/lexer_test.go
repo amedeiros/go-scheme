@@ -7,6 +7,7 @@ func TestNextToken(t *testing.T) {
 		`()
 +-*/
 1000 "Apples!"
+lambda
 `
 	lex := NewLexer(input)
 
@@ -24,6 +25,7 @@ func TestNextToken(t *testing.T) {
 		{IDENT, "/", 1, 3},
 		{DIGIT, "1000", 2, 0},
 		{STRING, "Apples!", 2, 5},
+		{IDENT, "lambda", 3, 0},
 	}
 
 	for index, test := range tests {

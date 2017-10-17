@@ -46,6 +46,11 @@ func (lexer *Lexer) NextToken() Token {
 			column := lexer.column
 			literal := lexer.readNumber()
 			return Token{Column: column, Row: row, Type: DIGIT, Literal: literal}
+		} else if isLetter(lexer.currentChar) {
+			row := lexer.row
+			column := lexer.column
+			literal := lexer.readIdentifier()
+			return Token{Column: column, Row: row, Type: IDENT, Literal: literal}
 		} else {
 			msg, _ := fmt.Printf("Unkown character %c at %d:%d", lexer.currentChar, lexer.row, lexer.column)
 			panic(msg)
@@ -61,6 +66,10 @@ func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
 // TODO: This does not consider escape sequences. This is an easy fix just being lazy.
 func (lexer *Lexer) consumeString() string {
 	position := lexer.readPosition
@@ -71,13 +80,26 @@ func (lexer *Lexer) consumeString() string {
 			break
 		}
 	}
-	return lexer.input[position:lexer.position]
+	val := lexer.input[position:lexer.position]
+	lexer.consume() // Closing "
+
+	return val
 }
 
 func (lexer *Lexer) readNumber() string {
 	position := lexer.position
 
 	for isDigit(lexer.currentChar) {
+		lexer.consume()
+	}
+
+	return lexer.input[position:lexer.position]
+}
+
+func (lexer *Lexer) readIdentifier() string {
+	position := lexer.position
+
+	for isLetter(lexer.currentChar) {
 		lexer.consume()
 	}
 

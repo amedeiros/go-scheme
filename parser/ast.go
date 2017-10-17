@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/amedeiros/go-scheme/lexer"
@@ -75,4 +76,26 @@ type String struct {
 // Inspect the string
 func (str *String) Inspect() string {
 	return str.Value
+}
+
+// FunctionLiteral node
+type FunctionLiteral struct {
+	Paramemeters []*Identifier
+	Body         []Ast
+}
+
+// Inspect a function
+func (funcLit *FunctionLiteral) Inspect() string {
+	params := []string{}
+	body := []string{}
+
+	for _, str := range funcLit.Paramemeters {
+		params = append(params, str.Inspect())
+	}
+
+	for _, str := range funcLit.Body {
+		body = append(body, str.Inspect())
+	}
+
+	return fmt.Sprintf("(lambda (%s) %s)", strings.Join(params, " "), strings.Join(body, "\n"))
 }
