@@ -15,10 +15,7 @@ func (tok Token) String() string {
 const (
 	LPAREN TokenType = iota
 	RPAREN
-	ADD
-	SUB
-	DIV
-	MUL
+	IDENT
 	EOF
 	DIGIT
 )

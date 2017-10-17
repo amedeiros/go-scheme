@@ -1,12 +1,13 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/amedeiros/go-scheme/lexer"
 )
 
 // Ast is our base interface for all other AST types
 type Ast interface {
-	GetToken() lexer.Token
 	Inspect() string
 }
 
@@ -21,38 +22,21 @@ func (intLiteral *IntegerLiteral) Inspect() string {
 	return intLiteral.Token.Literal
 }
 
-// GetToken returns the token.
-func (intLiteral *IntegerLiteral) GetToken() lexer.Token {
-	return intLiteral.Token
+// ProcedureCall calls a procedure (lambda)
+type ProcedureCall struct {
+	Name      string
+	Arguments []Ast
+	Token     lexer.Token
 }
 
-// Cons is our cons cell representation
-type Cons struct {
-	Car   Ast
-	Cdr   Ast
-	Token lexer.Token // '('
-}
-
-// Inspect returns the token literal.
-func (cons *Cons) Inspect() string {
-	// return intLiteral.Token.Literal
-	car := ""
-	cdr := ""
-
-	if cons.Car != nil {
-		car = cons.Car.Inspect()
+// Inspect returns the external representation of the expression
+func (procCall *ProcedureCall) Inspect() string {
+	args := []string{}
+	for _, arg := range procCall.Arguments {
+		args = append(args, arg.Inspect())
 	}
 
-	if cons.Cdr != nil {
-		cdr = cons.Cdr.Inspect()
-	}
-
-	return "(" + car + " " + cdr + ")"
-}
-
-// GetToken returns the token.
-func (cons *Cons) GetToken() lexer.Token {
-	return cons.Token
+	return "(" + procCall.Name + " " + strings.Join(args, " ") + ")"
 }
 
 // Identifier represents an identifier +, =, apples, oranges etc
@@ -64,9 +48,4 @@ type Identifier struct {
 // Inspect returns the token literal.
 func (ident *Identifier) Inspect() string {
 	return ident.Token.Literal
-}
-
-// GetToken returns the token.
-func (ident *Identifier) GetToken() lexer.Token {
-	return ident.Token
 }

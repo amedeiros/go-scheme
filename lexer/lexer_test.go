@@ -6,6 +6,7 @@ func TestNextToken(t *testing.T) {
 	input := 
 `()
 +-*/
+1000
 `
 	lex := NewLexer(input)
 
@@ -17,10 +18,11 @@ func TestNextToken(t *testing.T) {
 	}{
 		{ LPAREN, "(", 0, 0 },
 		{ RPAREN, ")", 0, 1 },
-		{ ADD, "+", 1, 0 },
-		{ SUB, "-", 1, 1 },
-		{ MUL, "*", 1, 2 },
-		{ DIV, "/", 1, 3 },
+		{ IDENT, "+", 1, 0 },
+		{ IDENT, "-", 1, 1 },
+		{ IDENT, "*", 1, 2 },
+		{ IDENT, "/", 1, 3 },
+		{ DIGIT, "1000", 2, 0 },
 	}
 
 	for index, test := range tests {

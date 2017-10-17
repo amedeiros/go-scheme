@@ -7,7 +7,7 @@ import (
 type Lexer struct {
 	input           string
 	row, column, sp int
-	currentChar     rune
+	currentChar     byte
 }
 
 func NewLexer(input string) *Lexer {
@@ -26,19 +26,21 @@ func (lexer *Lexer) NextToken() Token {
 	case ')':
 		tok = Token{Column: lexer.column, Row: lexer.row, Type: RPAREN, Literal: ")"}
 	case '+':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: ADD, Literal: "+"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "+"}
 	case '-':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: SUB, Literal: "-"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "-"}
 	case '*':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: MUL, Literal: "*"}
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "*"}
 	case '/':
-		tok = Token{Column: lexer.column, Row: lexer.row, Type: DIV, Literal: "/"}
-	case -1:
+		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "/"}
+	case 0:
 		tok = Token{Column: lexer.column, Row: lexer.row, Type: EOF, Literal: "EOF"}
 	default:
 		if isDigit(lexer.currentChar) {
+			row := lexer.row
+			column := lexer.column
 			literal := lexer.readNumber()
-			tok = Token{Column: lexer.column, Row: lexer.row, Type: DIGIT, Literal: literal}
+			tok = Token{Column: column, Row: row, Type: DIGIT, Literal: literal}
 		} else {
 			msg, _ := fmt.Printf("Unkown character %c at %d:%d", lexer.currentChar, lexer.row, lexer.column)
 			panic(msg)
@@ -50,12 +52,12 @@ func (lexer *Lexer) NextToken() Token {
 	return tok
 }
 
-func isDigit(ch rune) bool {
+func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
 func (lexer *Lexer) readNumber() string {
-	position := lexer.sp
+	position := lexer.sp - 1
 
 	for isDigit(lexer.currentChar) {
 		lexer.consume()
@@ -70,13 +72,13 @@ func (lexer *Lexer) consumeWS() {
 	}
 }
 
-func isWhiteSpace(char rune) bool {
+func isWhiteSpace(char byte) bool {
 	return char == ' ' || char == '\n' || char == '\t' || char == '\r'
 }
 
 func (lexer *Lexer) consume() {
 	if lexer.sp < len(lexer.input) {
-		lexer.currentChar = rune(lexer.input[lexer.sp])
+		lexer.currentChar = byte(lexer.input[lexer.sp])
 		lexer.sp += 1
 
 		if lexer.currentChar == '\n' {
@@ -86,6 +88,6 @@ func (lexer *Lexer) consume() {
 			lexer.column += 1
 		}
 	} else {
-		lexer.currentChar = -1
+		lexer.currentChar = 0
 	}
 }

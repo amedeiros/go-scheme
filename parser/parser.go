@@ -3,22 +3,27 @@ package parser
 import (
 	"fmt"
 
-	"strconv"
-
 	"github.com/amedeiros/go-scheme/lexer"
 )
 
+type prefixParseFn func() Ast
+
 // Parser reads tokens from the lexer build an AST for the evaluator
 type Parser struct {
-	lex          *lexer.Lexer
-	currentToken lexer.Token
-	peekToken    lexer.Token
-	errors       []string
+	lex            *lexer.Lexer
+	currentToken   lexer.Token
+	peekToken      lexer.Token
+	errors         []string
+	prefixParseFns map[lexer.TokenType]prefixParseFn
 }
 
 // NewParser creates a new parser from our lexer.
 func NewParser(lex *lexer.Lexer) *Parser {
-	return &Parser{lex: lex, currentToken: lex.NextToken(), peekToken: lex.NextToken()}
+	p := &Parser{lex: lex, currentToken: lex.NextToken(), peekToken: lex.NextToken()}
+
+	p.prefixParseFns = make(map[lexer.TokenType]prefixParseFn)
+	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
+	return p
 }
 
 // ParseProgram is the entry point to generate the AST
@@ -41,22 +46,29 @@ func (p *Parser) parseStatement() Ast {
 	switch p.currentToken.Type {
 	case lexer.LPAREN:
 		p.nextToken()
-		return p.parseExpression()
-	case lexer.ADD:
-		node := &Identifier{Value: p.currentToken.Literal, Token: p.currentToken}
-		// p.nextToken()
-		return node
-	case lexer.DIGIT:
-		value, _ := strconv.Atoi(p.currentToken.Literal)
-		node := &IntegerLiteral{Value: value, Token: p.currentToken}
-		// p.nextToken()
-		return node
+		return p.parseCallExpression()
+	// case lexer.IDENT:
+	// 	return &Identifier{Value: p.currentToken.Literal, Token: p.currentToken}
+	// case lexer.DIGIT:
+	// 	value, _ := strconv.Atoi(p.currentToken.Literal)
+	// 	return &IntegerLiteral{Value: value, Token: p.currentToken}
 	case lexer.EOF:
 		return nil
 	default:
-		msg, _ := fmt.Printf("Unkown node literal %s", p.currentToken.Literal)
+		return p.parseExpression()
+	}
+}
+
+func (p *Parser) parseExpression() Ast {
+	expression := p.prefixParseFns[p.currentToken.Type]
+
+	if expression == nil {
+		msg, _ := fmt.Printf("No parse function for literal %s and TokenType %d at %d:%d",
+			p.currentToken.Literal, p.currentToken.Type, p.currentToken.Row, p.currentToken.Column)
 		panic(msg)
 	}
+
+	return expression()
 }
 
 func (p *Parser) nextToken() {
@@ -64,22 +76,51 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.lex.NextToken()
 }
 
-func (p *Parser) parseExpression() Ast {
-	cons := &Cons{Token: p.currentToken}
+func (p *Parser) parseCallExpression() Ast {
+	fmt.Print(p.currentToken.Literal)
 
-	if p.currentToken.Type != lexer.RPAREN {
-		cons.Car = p.parseStatement()
-		if p.currentToken.Type != lexer.RPAREN && p.currentToken.Type != lexer.EOF {
-			cons.Cdr = p.parseStatement()
-		}
+	if p.currentTokenIs(lexer.RPAREN) {
+		msg, _ := fmt.Printf("Unexpected ) at %d:%d", p.currentToken.Row, p.currentToken.Column)
+		panic(msg)
 	}
 
-	if p.currentToken.Type != lexer.RPAREN {
+	fmt.Print(p.currentToken.Literal)
+
+	if !p.currentTokenIs(lexer.IDENT) {
+		msg, _ := fmt.Printf("Unexpected value %s at %d:%d", p.currentToken.Literal, p.currentToken.Row, p.currentToken.Column)
+		panic(msg)
+	}
+
+	callExp := &ProcedureCall{Token: p.currentToken, Name: p.currentToken.Literal}
+
+	p.nextToken()
+	if p.currentTokenIs(lexer.RPAREN) {
+		return callExp
+	}
+
+	args := []Ast{}
+	for !p.currentTokenIs(lexer.RPAREN) && !p.currentTokenIs(lexer.EOF) {
 		fmt.Println(p.currentToken.Literal)
+		args = append(args, p.parseStatement())
+	}
+
+	if !p.currentTokenIs(lexer.RPAREN) {
 		panic("Missing closing )")
 	}
+	p.nextToken()
 
-	p.nextToken() // consume the closing )
+	callExp.Arguments = args
+	return callExp
+}
 
-	return cons
+func (p *Parser) parseIdentifier() Ast {
+	return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
+}
+
+func (p *Parser) currentTokenIs(val lexer.TokenType) bool {
+	return p.currentToken.Type == val
+}
+
+func (p *Parser) registerPrefix(tokenType lexer.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
 }
