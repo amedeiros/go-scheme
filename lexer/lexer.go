@@ -33,6 +33,11 @@ func (lexer *Lexer) NextToken() Token {
 		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "*"}
 	case '/':
 		tok = Token{Column: lexer.column, Row: lexer.row, Type: IDENT, Literal: "/"}
+	case '"':
+		row := lexer.row
+		column := lexer.column
+		value := lexer.consumeString()
+		return Token{Column: column, Row: row, Type: STRING, Literal: value}
 	case 0:
 		tok = Token{Column: lexer.column, Row: lexer.row, Type: EOF, Literal: "EOF"}
 	default:
@@ -54,6 +59,19 @@ func (lexer *Lexer) NextToken() Token {
 
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+// TODO: This does not consider escape sequences. This is an easy fix just being lazy.
+func (lexer *Lexer) consumeString() string {
+	position := lexer.readPosition
+
+	for {
+		lexer.consume()
+		if lexer.currentChar == '"' || lexer.currentChar == 0 {
+			break
+		}
+	}
+	return lexer.input[position:lexer.position]
 }
 
 func (lexer *Lexer) readNumber() string {

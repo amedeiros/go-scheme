@@ -29,6 +29,7 @@ func NewParser(lex *lexer.Lexer) *Parser {
 	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
 	p.registerPrefix(lexer.DIGIT, p.parseDigit)
 	p.registerPrefix(lexer.LPAREN, p.parseCallExpression)
+	p.registerPrefix(lexer.STRING, p.parseString)
 	return p
 }
 
@@ -113,25 +114,16 @@ func (p *Parser) parseCallExpression() Ast {
 		return callExp
 	}
 
-	// args := []Ast{}
-
-	// for !p.currentTokenIs(lexer.RPAREN) && !p.currentTokenIs(lexer.EOF) {
-	// 	args = append(args, p.parseExpression())
-	// 	p.nextToken()
-	// }
-
-	// if !p.currentTokenIs(lexer.RPAREN) {
-	// 	msg, _ := fmt.Printf("Missing closing ) found %s instead at %d:%d ", p.currentToken.Literal, p.currentToken.Row, p.currentToken.Column)
-	// 	panic(msg)
-	// }
-
-	// callExp.Arguments = args
 	callExp.Arguments = p.parseExpressionEnd(lexer.RPAREN)
 	return callExp
 }
 
 func (p *Parser) parseIdentifier() Ast {
 	return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
+}
+
+func (p *Parser) parseString() Ast {
+	return &String{Value: p.currentToken.Literal, Token: p.currentToken}
 }
 
 func (p *Parser) parseDigit() Ast {

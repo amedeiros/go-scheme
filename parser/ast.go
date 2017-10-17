@@ -65,3 +65,14 @@ func (prog *Program) Inspect() string {
 
 	return output
 }
+
+// String node
+type String struct {
+	Value string
+	Token lexer.Token
+}
+
+// Inspect the string
+func (str *String) Inspect() string {
+	return str.Value
+}

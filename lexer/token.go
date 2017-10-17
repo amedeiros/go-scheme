@@ -16,6 +16,7 @@ const (
 	LPAREN TokenType = iota
 	RPAREN
 	IDENT
+	STRING
 	EOF
 	DIGIT
 )

@@ -34,3 +34,14 @@ func TestParseList(t *testing.T) {
 		}
 	}
 }
+
+func TestParseString(t *testing.T) {
+	input := `"Apples!"`
+
+	lex := lexer.NewLexer(input)
+	parse := NewParser(lex)
+	program := parse.ParseProgram()
+	if "Apples!" != program.Inspect() {
+		t.Fatalf("Expected %s got %s instead", input, program.Inspect())
+	}
+}
