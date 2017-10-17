@@ -3,26 +3,26 @@ package lexer
 import "testing"
 
 func TestNextToken(t *testing.T) {
-	input := 
-`()
+	input :=
+		`()
 +-*/
 1000
 `
 	lex := NewLexer(input)
 
 	tests := []struct {
-		expectedType  TokenType
+		expectedType    TokenType
 		expectedLiteral string
-		expectedRow int
-		expectedColumn int
+		expectedRow     int
+		expectedColumn  int
 	}{
-		{ LPAREN, "(", 0, 0 },
-		{ RPAREN, ")", 0, 1 },
-		{ IDENT, "+", 1, 0 },
-		{ IDENT, "-", 1, 1 },
-		{ IDENT, "*", 1, 2 },
-		{ IDENT, "/", 1, 3 },
-		{ DIGIT, "1000", 2, 0 },
+		{LPAREN, "(", 0, 0},
+		{RPAREN, ")", 0, 1},
+		{IDENT, "+", 1, 0},
+		{IDENT, "-", 1, 1},
+		{IDENT, "*", 1, 2},
+		{IDENT, "/", 1, 3},
+		{DIGIT, "1000", 2, 0},
 	}
 
 	for index, test := range tests {
@@ -42,5 +42,18 @@ func TestNextToken(t *testing.T) {
 		if tok.Row != test.expectedRow {
 			t.Fatalf("tests[%d] - Wrong Row expected=%d, got=%d", index, test.expectedRow, tok.Row)
 		}
-	} 
+	}
+}
+
+func TestLexingPairs(t *testing.T) {
+	input := `(+ 1 1 1)`
+	lex := NewLexer(input)
+	tests := []string{"(", "+", "1", "1", "1", ")"}
+	for _, test := range tests {
+		tok := lex.NextToken()
+		if tok.Literal != test {
+			t.Fatalf("Expected %s got %s instead", test, tok.Literal)
+		}
+	}
+
 }

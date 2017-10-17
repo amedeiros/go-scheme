@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 
+	"strconv"
+
 	"github.com/amedeiros/go-scheme/lexer"
 )
 
@@ -19,21 +21,25 @@ type Parser struct {
 
 // NewParser creates a new parser from our lexer.
 func NewParser(lex *lexer.Lexer) *Parser {
-	p := &Parser{lex: lex, currentToken: lex.NextToken(), peekToken: lex.NextToken()}
+	p := &Parser{lex: lex}
+	p.nextToken()
+	p.nextToken()
 
 	p.prefixParseFns = make(map[lexer.TokenType]prefixParseFn)
 	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
+	p.registerPrefix(lexer.DIGIT, p.parseDigit)
+	p.registerPrefix(lexer.LPAREN, p.parseCallExpression)
 	return p
 }
 
 // ParseProgram is the entry point to generate the AST
-func (p *Parser) ParseProgram() []Ast {
-	ast := []Ast{}
+func (p *Parser) ParseProgram() *Program {
+	ast := &Program{}
 
 	for p.currentToken.Type != lexer.EOF {
 		statement := p.parseStatement()
 		if statement != nil {
-			ast = append(ast, statement)
+			ast.Expressions = append(ast.Expressions, statement)
 		}
 
 		p.nextToken()
@@ -44,14 +50,6 @@ func (p *Parser) ParseProgram() []Ast {
 
 func (p *Parser) parseStatement() Ast {
 	switch p.currentToken.Type {
-	case lexer.LPAREN:
-		p.nextToken()
-		return p.parseCallExpression()
-	// case lexer.IDENT:
-	// 	return &Identifier{Value: p.currentToken.Literal, Token: p.currentToken}
-	// case lexer.DIGIT:
-	// 	value, _ := strconv.Atoi(p.currentToken.Literal)
-	// 	return &IntegerLiteral{Value: value, Token: p.currentToken}
 	case lexer.EOF:
 		return nil
 	default:
@@ -76,40 +74,59 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.lex.NextToken()
 }
 
-func (p *Parser) parseCallExpression() Ast {
-	fmt.Print(p.currentToken.Literal)
+func (p *Parser) parseExpressionEnd(end lexer.TokenType) []Ast {
+	ast := []Ast{}
 
-	if p.currentTokenIs(lexer.RPAREN) {
+	if p.peekTokenIs(end) {
+		p.nextToken()
+		return ast
+	}
+
+	for !p.currentTokenIs(end) && !p.currentTokenIs(lexer.EOF) {
+		ast = append(ast, p.parseExpression())
+		p.nextToken()
+	}
+
+	if !p.currentTokenIs(end) {
+		return nil
+	}
+
+	return ast
+}
+
+func (p *Parser) parseCallExpression() Ast {
+	if p.peekTokenIs(lexer.RPAREN) {
 		msg, _ := fmt.Printf("Unexpected ) at %d:%d", p.currentToken.Row, p.currentToken.Column)
 		panic(msg)
 	}
 
-	fmt.Print(p.currentToken.Literal)
-
-	if !p.currentTokenIs(lexer.IDENT) {
+	if !p.peekTokenIs(lexer.IDENT) {
 		msg, _ := fmt.Printf("Unexpected value %s at %d:%d", p.currentToken.Literal, p.currentToken.Row, p.currentToken.Column)
 		panic(msg)
 	}
 
-	callExp := &ProcedureCall{Token: p.currentToken, Name: p.currentToken.Literal}
-
 	p.nextToken()
+	callExp := &ProcedureCall{Token: p.currentToken, Name: p.currentToken.Literal}
+	p.nextToken()
+
 	if p.currentTokenIs(lexer.RPAREN) {
 		return callExp
 	}
 
-	args := []Ast{}
-	for !p.currentTokenIs(lexer.RPAREN) && !p.currentTokenIs(lexer.EOF) {
-		fmt.Println(p.currentToken.Literal)
-		args = append(args, p.parseStatement())
-	}
+	// args := []Ast{}
 
-	if !p.currentTokenIs(lexer.RPAREN) {
-		panic("Missing closing )")
-	}
-	p.nextToken()
+	// for !p.currentTokenIs(lexer.RPAREN) && !p.currentTokenIs(lexer.EOF) {
+	// 	args = append(args, p.parseExpression())
+	// 	p.nextToken()
+	// }
 
-	callExp.Arguments = args
+	// if !p.currentTokenIs(lexer.RPAREN) {
+	// 	msg, _ := fmt.Printf("Missing closing ) found %s instead at %d:%d ", p.currentToken.Literal, p.currentToken.Row, p.currentToken.Column)
+	// 	panic(msg)
+	// }
+
+	// callExp.Arguments = args
+	callExp.Arguments = p.parseExpressionEnd(lexer.RPAREN)
 	return callExp
 }
 
@@ -117,8 +134,17 @@ func (p *Parser) parseIdentifier() Ast {
 	return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
 }
 
+func (p *Parser) parseDigit() Ast {
+	value, _ := strconv.Atoi(p.currentToken.Literal)
+	return &IntegerLiteral{Token: p.currentToken, Value: value}
+}
+
 func (p *Parser) currentTokenIs(val lexer.TokenType) bool {
 	return p.currentToken.Type == val
+}
+
+func (p *Parser) peekTokenIs(val lexer.TokenType) bool {
+	return p.peekToken.Type == val
 }
 
 func (p *Parser) registerPrefix(tokenType lexer.TokenType, fn prefixParseFn) {

@@ -49,3 +49,19 @@ type Identifier struct {
 func (ident *Identifier) Inspect() string {
 	return ident.Token.Literal
 }
+
+// Program is a wrapper around a collection of Ast nodes.
+type Program struct {
+	Expressions []Ast
+}
+
+// Inspect the programs AST
+func (prog *Program) Inspect() string {
+	output := ""
+
+	for _, expression := range prog.Expressions {
+		output += expression.Inspect()
+	}
+
+	return output
+}

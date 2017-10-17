@@ -25,16 +25,7 @@ func main() {
 
 		lex := lexer.NewLexer(cleanText)
 		parse := parser.NewParser(lex)
-
-		for _, node := range parse.ParseProgram() {
-			fmt.Println(node.Inspect())
-		}
-
-		// token := lex.NextToken()
-
-		// for token.Type != lexer.EOF {
-		// fmt.Println(token)
-		// token = lex.NextToken()
-		// }
+		program := parse.ParseProgram()
+		fmt.Println(program.Inspect())
 	}
 }
