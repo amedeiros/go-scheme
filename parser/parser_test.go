@@ -35,30 +35,49 @@ func TestParseList(t *testing.T) {
 	}
 }
 
-func TestParseString(t *testing.T) {
-	input := `"Apples!"`
+// func TestParseString(t *testing.T) {
+// 	input := `"Apples!"`
 
-	lex := lexer.NewLexer(input)
-	parse := NewParser(lex)
-	program := parse.ParseProgram()
-	if "Apples!" != program.Inspect() {
-		t.Fatalf("Expected %s got %s instead", input, program.Inspect())
-	}
-}
+// 	lex := lexer.NewLexer(input)
+// 	parse := NewParser(lex)
+// 	program := parse.ParseProgram()
+// 	if "Apples!" != program.Inspect() {
+// 		t.Fatalf("Expected %s got %s instead", input, program.Inspect())
+// 	}
+// }
 
-func TestParseLambda(t *testing.T) {
-	tests := []struct {
-		input string
-	}{
-		{input: "(lambda (x y) (+ x y))"},
-	}
+// func TestParseLambdaLiteral(t *testing.T) {
+// 	tests := []struct {
+// 		input, expect string
+// 	}{
+// 		{input: "(lambda (x y) (+ x y))", expect: "(LAMBDA (X Y) (+ X Y))"},
+// 		{input: "(lambda () (+ 1 1))", expect: "(LAMBDA () (+ 1 1))"},
+// 	}
 
-	for _, test := range tests {
-		lex := lexer.NewLexer(test.input)
-		parse := NewParser(lex)
-		program := parse.ParseProgram()
-		if test.input != program.Inspect() {
-			t.Fatalf("Expected %s got %s instead", test.input, program.Inspect())
-		}
-	}
-}
+// 	for _, test := range tests {
+// 		lex := lexer.NewLexer(test.input)
+// 		parse := NewParser(lex)
+// 		program := parse.ParseProgram()
+// 		if test.expect != program.Inspect() {
+// 			t.Fatalf("Expected %s got %s instead", test.expect, program.Inspect())
+// 		}
+// 	}
+// }
+
+// func TestParseLambdaCall(t *testing.T) {
+// 	tests := []struct {
+// 		input, expect string
+// 	}{
+// 		// {input: "((lambda (x y) (+ x y)))", expect: "((LAMBDA (X Y) (+ X Y)))"},
+// 		{input: "((lambda () (+ 1 1)))", expect: "((LAMBDA () (+ 1 1)))"},
+// 	}
+
+// 	for _, test := range tests {
+// 		lex := lexer.NewLexer(test.input)
+// 		parse := NewParser(lex)
+// 		program := parse.ParseProgram()
+// 		if test.expect != program.Inspect() {
+// 			t.Fatalf("Expected %s got %s instead", test.expect, program.Inspect())
+// 		}
+// 	}
+// }

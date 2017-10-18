@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Lexer struct {
@@ -50,7 +51,7 @@ func (lexer *Lexer) NextToken() Token {
 			row := lexer.row
 			column := lexer.column
 			literal := lexer.readIdentifier()
-			return Token{Column: column, Row: row, Type: IDENT, Literal: literal}
+			return Token{Column: column, Row: row, Type: IDENT, Literal: strings.ToUpper(literal)}
 		} else {
 			msg, _ := fmt.Printf("Unkown character %c at %d:%d", lexer.currentChar, lexer.row, lexer.column)
 			panic(msg)

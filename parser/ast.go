@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/amedeiros/go-scheme/lexer"
@@ -25,8 +24,8 @@ func (intLiteral *IntegerLiteral) Inspect() string {
 
 // ProcedureCall calls a procedure (lambda)
 type ProcedureCall struct {
-	Name      string
 	Arguments []Ast
+	Function  Ast // Lambda or Identifier
 	Token     lexer.Token
 }
 
@@ -37,7 +36,15 @@ func (procCall *ProcedureCall) Inspect() string {
 		args = append(args, arg.Inspect())
 	}
 
-	return "(" + procCall.Name + " " + strings.Join(args, " ") + ")"
+	arguments := ""
+
+	if len(args) > 0 {
+		arguments = strings.Join(args, " ")
+	}
+
+	funcString := procCall.Function.Inspect()
+
+	return "(" + funcString + " " + arguments + ")"
 }
 
 // Identifier represents an identifier +, =, apples, oranges etc
@@ -51,22 +58,6 @@ func (ident *Identifier) Inspect() string {
 	return ident.Token.Literal
 }
 
-// Program is a wrapper around a collection of Ast nodes.
-type Program struct {
-	Expressions []Ast
-}
-
-// Inspect the programs AST
-func (prog *Program) Inspect() string {
-	output := ""
-
-	for _, expression := range prog.Expressions {
-		output += expression.Inspect()
-	}
-
-	return output
-}
-
 // String node
 type String struct {
 	Value string
@@ -78,14 +69,15 @@ func (str *String) Inspect() string {
 	return str.Value
 }
 
-// FunctionLiteral node
-type FunctionLiteral struct {
+// LambdaLiteral node
+type LambdaLiteral struct {
+	Token        lexer.Token
 	Paramemeters []*Identifier
 	Body         []Ast
 }
 
 // Inspect a function
-func (funcLit *FunctionLiteral) Inspect() string {
+func (funcLit *LambdaLiteral) Inspect() string {
 	params := []string{}
 	body := []string{}
 
@@ -97,5 +89,28 @@ func (funcLit *FunctionLiteral) Inspect() string {
 		body = append(body, str.Inspect())
 	}
 
-	return fmt.Sprintf("(lambda (%s) %s)", strings.Join(params, " "), strings.Join(body, "\n"))
+	arguments := ""
+
+	if len(params) > 0 {
+		arguments = strings.Join(params, " ")
+	}
+
+	return "(LAMBDA (" + arguments + ") " + strings.Join(body, " ") + ")"
+}
+
+type Cons struct {
+	Car Ast
+	Cdr []Ast
+}
+
+func (cons *Cons) Inspect() string {
+	body := []string{}
+	for _, str := range cons.Cdr {
+		body = append(body, str.Inspect())
+	}
+
+	if cons.Cdr == nil {
+		return cons.Car.Inspect()
+	}
+	return "(" + cons.Car.Inspect() + " " + strings.Join(body, " ") + ")"
 }
