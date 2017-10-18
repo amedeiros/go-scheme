@@ -50,7 +50,7 @@ func TestParseLambda(t *testing.T) {
 	tests := []struct {
 		input string
 	}{
-		{input: "(lambda (x y) (+ x y)"},
+		{input: "(lambda (x y) (+ x y))"},
 	}
 
 	for _, test := range tests {

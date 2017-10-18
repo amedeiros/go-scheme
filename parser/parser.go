@@ -107,6 +107,7 @@ func (p *Parser) parseCallExpression() Ast {
 	}
 
 	p.nextToken()
+
 	callExp := &ProcedureCall{Token: p.currentToken, Name: p.currentToken.Literal}
 	p.nextToken()
 
@@ -119,14 +120,7 @@ func (p *Parser) parseCallExpression() Ast {
 }
 
 func (p *Parser) parseIdentifier() Ast {
-	// return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
-	switch p.currentToken.Literal {
-	case "lambda":
-	default:
-		return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
-	}
-
-	return nil // non-reachable
+	return &Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
 }
 
 func (p *Parser) parseString() Ast {
