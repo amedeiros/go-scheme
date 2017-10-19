@@ -1,38 +1,56 @@
 package main
 
-// import (
-// 	"bufio"
-// 	"fmt"
-// 	"os"
-// 	"strings"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
 
-// 	"github.com/amedeiros/go-scheme/evaluator"
-// 	"github.com/amedeiros/go-scheme/lexer"
-// 	"github.com/amedeiros/go-scheme/object"
-// 	"github.com/amedeiros/go-scheme/parser"
-// )
+	"github.com/amedeiros/go-scheme/object"
+)
 
-func main() {}
+func main() {
+	fmt.Println("Go Schemeing 1.0.0")
+	fmt.Println("Type .exit to exit")
+	replReader := bufio.NewReader(os.Stdin)
+	env := object.NewEnvironment()
 
-// func main() {
-// 	fmt.Println("Go Schemeing 1.0.0")
-// 	fmt.Println("Type .exit to exit")
-// 	reader := bufio.NewReader(os.Stdin)
-// 	env := object.NewEnvironment() // Global ENV
+	for {
+		fmt.Print(">> ")
+		text, _ := replReader.ReadString('\n')
+		cleanText := strings.Trim(text, "\n")
+		if cleanText == ".exit" {
+			break
+		}
 
-// 	for {
-// 		fmt.Print(">> ")
-// 		text, _ := reader.ReadString('\n')
-// 		cleanText := strings.Trim(text, "\n")
-// 		if cleanText == ".exit" {
-// 			break
-// 		}
+		reader := NewReader(cleanText)
+		obj := Eval(reader.Read(), env)
 
-// 		lex := lexer.NewLexer(cleanText)
-// 		parse := parser.NewParser(lex)
-// 		program := parse.ParseProgram()
-// 		result := evaluator.Eval(program, env)
-// 		fmt.Println(result.Inspect())
-// 		// fmt.Println(program.Inspect())
-// 	}
-// }
+		// for {
+		// 	if obj == nil {
+		// 		break
+		// 	}
+
+		if isError(obj) {
+			if obj.Inspect() != "EOF" {
+				fmt.Println(obj.Inspect())
+			}
+			// break
+		} else {
+			fmt.Println(obj.Inspect())
+		}
+
+		// fmt.Println(obj.Inspect())
+		// obj = reader.Read()
+		// }
+	}
+}
+
+func isError(obj object.Object) bool {
+	switch obj.(type) {
+	case *object.Error:
+		return true
+	default:
+		return false
+	}
+}
