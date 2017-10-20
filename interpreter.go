@@ -7,6 +7,10 @@ import (
 	"github.com/amedeiros/go-scheme/object"
 )
 
+// LET to check for a let call
+const LET = "LET"
+
+// Eval an object
 func Eval(obj object.Object, env *object.Environment) object.Object {
 	switch node := obj.(type) {
 	case *object.Boolean, *object.Char, *object.String, *object.Error, *object.Integer:
@@ -19,34 +23,31 @@ func Eval(obj object.Object, env *object.Environment) object.Object {
 			return val
 		}
 
-		return &object.Error{Value: fmt.Errorf("Unkown identifier %s", node.Value)}
+		return newError(fmt.Sprintf("Unkown identifier %s", node.Value))
 	case *object.Cons:
 		car := node.Car
 		switch carType := car.(type) {
 		case *object.Identifier:
 			if builtin, ok := builtins[carType.Value]; ok {
-				args := []object.Object{}
-				node = node.Cdr.(*object.Cons)
-
-				for node != nil {
-					car = node.Car
-					val := Eval(car, env)
-					if isError(val) {
-						return val
-					}
-					args = append(args, val)
-					if node.Cdr != nil {
-						node = node.Cdr.(*object.Cons)
-					} else {
-						node = nil
-					}
+				args, err := evalArgs(node.Cdr.(*object.Cons), env)
+				if err != nil {
+					return err
 				}
 
 				return builtin.Fn(args...)
 			}
 
+			if scopedBuiltin, ok := scopedBuiltins[carType.Value]; ok {
+				args, err := evalArgs(node.Cdr.(*object.Cons), env)
+				if err != nil {
+					return err
+				}
+
+				return scopedBuiltin.Fn(env, args...)
+			}
+
 			// Builtin LET
-			if carType.Value == "LET" {
+			if carType.Value == LET {
 				if cons, ok := node.Cdr.(*object.Cons); ok {
 					if car, ok := cons.Car.(*object.Identifier); ok {
 						val := Eval(cons.Cdr, env)
@@ -54,44 +55,29 @@ func Eval(obj object.Object, env *object.Environment) object.Object {
 						return val
 					}
 				} else {
-					return &object.Error{Value: errors.New("Expecting cons cell")}
+					return newError("Expecting cons cell")
 				}
 			}
 
 			// Check the ENV for a Lambda
 			if val, ok := env.Get(carType.Value); ok {
 				if lambda, ok := val.(*object.Lambda); ok {
-					var args []object.Object
-
-					cdr := node.Cdr
-					for cdr != nil {
-						cons := cdr.(*object.Cons)
-						val := Eval(cons.Car, env)
-
-						if isError(val) {
-							return val
-						}
-
-						args = append(args, val)
-
-						if cdr != nil && cons.Cdr != nil {
-							cdr = cons.Cdr.(*object.Cons)
-						} else {
-							break
-						}
+					args, err := evalArgs(node.Cdr.(*object.Cons), env)
+					if err != nil {
+						return err
 					}
 
 					return applyFunction(lambda, carType.Value, args)
 				}
 			}
 
-			return &object.Error{Value: fmt.Errorf("Unkown proc %s", carType.Value)}
+			return newError(fmt.Sprintf("Unkown proc %s", carType.Value))
 		default:
 			return Eval(carType, env)
 		}
 	}
 
-	panic(fmt.Sprintf("OBJECT: %#v", obj))
+	panic("You just found a bug or an unimplemented feature congrats!")
 }
 
 func applyFunction(lambda *object.Lambda, name string, args []object.Object) object.Object {
@@ -109,6 +95,8 @@ func extendFunctionEnv(lambda *object.Lambda, name string, args []object.Object)
 
 	return env
 }
+
+var scopedBuiltins = map[string]*object.ScopedBuiltin{}
 
 var builtins = map[string]*object.Builtin{
 	"+": &object.Builtin{
@@ -165,7 +153,7 @@ var builtins = map[string]*object.Builtin{
 	},
 	"QUOTE": &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
-			return &object.String{Value: args[0].(*object.String).Inspect()}
+			return args[0].(*object.String)
 		},
 	},
 }
@@ -179,7 +167,7 @@ func newError(msg string) *object.Error {
 }
 
 func ap(any interface{}) {
-	fmt.Println(fmt.Printf("FANCY: %#v", any))
+	fmt.Println(fmt.Printf("%#v", any))
 }
 
 func apMsg(msg string, any interface{}) {
@@ -188,17 +176,37 @@ func apMsg(msg string, any interface{}) {
 
 // Load setups the inital environment and returns it
 func Load() *object.Environment {
-	env := object.NewEnvironment()
+	loadScopedBuiltins()
+	return object.NewEnvironment()
+}
 
-	eval := &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
+func evalArgs(cons *object.Cons, env *object.Environment) ([]object.Object, *object.Error) {
+	args := []object.Object{}
+
+	for {
+		car := cons.Car
+		val := Eval(car, env)
+		if isError(val) {
+			return nil, val.(*object.Error)
+		}
+		args = append(args, val)
+		if cons.Cdr != nil {
+			cons = cons.Cdr.(*object.Cons)
+		} else {
+			break
+		}
+	}
+
+	return args, nil
+}
+
+func loadScopedBuiltins() {
+	eval := &object.ScopedBuiltin{
+		Fn: func(env *object.Environment, args ...object.Object) object.Object {
 			r := NewReader(args[0].(*object.String).Value)
 			return Eval(r.Read(), env)
 		},
 	}
 
-	builtins["EVAL"] = eval // Register this
-	env.Set("EVAL", eval)
-
-	return env
+	scopedBuiltins["EVAL"] = eval
 }

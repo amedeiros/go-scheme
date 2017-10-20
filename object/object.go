@@ -8,6 +8,9 @@ import (
 // BuiltinFunction type
 type BuiltinFunction func(args ...Object) Object
 
+//ScopedBuiltinFunction type
+type ScopedBuiltinFunction func(env *Environment, args ...Object) Object
+
 const (
 	INT_OBJ     Type = "INT_OBJ"
 	FLOAT_OBJ   Type = "FLOAT_OBJ"
@@ -72,6 +75,22 @@ func (builtin *Builtin) Type() Type {
 
 // Inspect the builtin
 func (builtin *Builtin) Inspect() string {
+	return "<#procedure>"
+}
+
+// ScopedBuiltin function
+type ScopedBuiltin struct {
+	Fn  ScopedBuiltinFunction
+	Env *Environment
+}
+
+// Type of builtin
+func (builtin *ScopedBuiltin) Type() Type {
+	return BUILTIN_OBJ
+}
+
+// Inspect the builtin
+func (builtin *ScopedBuiltin) Inspect() string {
 	return "<#procedure>"
 }
 

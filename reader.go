@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,17 +10,26 @@ import (
 	"github.com/amedeiros/go-scheme/object"
 )
 
+// TRUE is the only true value
 var TRUE = &object.Boolean{Value: true}
+
+// FALSE is the only false value
 var FALSE = &object.Boolean{Value: false}
 
+// EOF check for end of file
+const EOF = "EOF"
+
+// Reader wraps a bufio.Reader for us
 type Reader struct {
 	reader *bufio.Reader
 }
 
+// NewReader takes in a string and returns a new Reader
 func NewReader(input string) *Reader {
 	return &Reader{bufio.NewReader(strings.NewReader(input))}
 }
 
+// Read will parse and return an object on each call
 func (r *Reader) Read() object.Object {
 	char, err := r.currentByte()
 	if err != nil {
@@ -52,7 +60,7 @@ func (r *Reader) Read() object.Object {
 			return &object.Char{Value: string(cur)}
 		}
 
-		panic(fmt.Sprintf("Expecting one of F or T or \\ found %s instead.", peekChar))
+		return newError(fmt.Sprintf("Expecting one of F or T or \\ found %s instead.", peekChar))
 	case '"':
 		str := bytes.Buffer{}
 
@@ -73,8 +81,8 @@ func (r *Reader) Read() object.Object {
 			peekChar, err := r.peek()
 
 			if err != nil {
-				if err.Inspect() == "EOF" {
-					return &object.Error{Value: errors.New("Missing closing \"")}
+				if err.Inspect() == EOF {
+					return newError("Missing closing \"")
 				}
 
 				return err
@@ -92,7 +100,7 @@ func (r *Reader) Read() object.Object {
 		}
 
 		if cur != '"' {
-			return &object.Error{Value: errors.New("Missing closing \"")}
+			return newError("Missing closing \"")
 		}
 
 		return &object.String{Value: str.String()}
@@ -250,7 +258,7 @@ func (r *Reader) readLambda() object.Object {
 	}
 
 	if peekChar != '(' {
-		return &object.Error{Value: errors.New("Missing opening (")}
+		return newError("Missing opening (")
 	}
 
 	r.skip()
