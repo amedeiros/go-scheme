@@ -2,6 +2,7 @@ package object
 
 import (
 	"fmt"
+	"strings"
 )
 
 // BuiltinFunction type
@@ -147,7 +148,19 @@ func (c *Cons) Inspect() string {
 
 	switch c.Cdr.(type) {
 	case *Cons:
-		return "(" + c.Car.Inspect() + " " + c.Cdr.Inspect() + ")"
+		end := c.Cdr.(*Cons)
+		cdr := ""
+
+		for {
+			cdr += end.Car.Inspect()
+			cdr += " "
+			if end.Cdr != nil {
+				end = end.Cdr.(*Cons)
+			} else {
+				break
+			}
+		}
+		return "(" + c.Car.Inspect() + " " + strings.TrimSpace(cdr) + ")"
 	default:
 		return "(" + c.Car.Inspect() + " . " + c.Cdr.Inspect() + ")"
 	}

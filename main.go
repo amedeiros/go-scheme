@@ -13,7 +13,7 @@ func main() {
 	fmt.Println("Go Schemeing 1.0.0")
 	fmt.Println("Type .exit to exit")
 	replReader := bufio.NewReader(os.Stdin)
-	env := object.NewEnvironment()
+	env := Load()
 
 	for {
 		fmt.Print(">> ")
@@ -24,14 +24,19 @@ func main() {
 		}
 
 		reader := NewReader(cleanText)
-		obj := Eval(reader.Read(), env)
 
-		if isError(obj) {
-			if obj.Inspect() != "EOF" {
+		for {
+			obj := Eval(reader.Read(), env)
+
+			if isError(obj) {
+				if obj.Inspect() != "EOF" {
+					fmt.Println(obj.Inspect())
+				} else {
+					break
+				}
+			} else {
 				fmt.Println(obj.Inspect())
 			}
-		} else {
-			fmt.Println(obj.Inspect())
 		}
 	}
 }

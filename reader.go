@@ -55,15 +55,17 @@ func (r *Reader) Read() object.Object {
 		panic(fmt.Sprintf("Expecting one of F or T or \\ found %s instead.", peekChar))
 	case '"':
 		str := bytes.Buffer{}
+
 		for {
 			cur, err := r.currentByte()
+
 			if err != nil {
 				return err
 			}
 
 			switch cur {
 			case '\n':
-				str.WriteByte('\n')
+				str.WriteString("\n")
 			default:
 				str.WriteByte(cur)
 			}
@@ -101,7 +103,7 @@ func (r *Reader) Read() object.Object {
 			return cdr
 		}
 
-		return &object.Cons{Car: &object.Identifier{Value: "quote"}, Cdr: &object.Cons{Car: cdr}}
+		return &object.Cons{Car: &object.Identifier{Value: "QUOTE"}, Cdr: &object.Cons{Car: &object.String{Value: cdr.Inspect()}}}
 	case '`':
 		cdr := r.Read()
 
@@ -307,11 +309,6 @@ func (r *Reader) peek() (byte, *object.Error) {
 
 	if err != nil {
 		return byte(1), &object.Error{Value: err}
-	}
-
-	for isWS(bytes[0]) && err == nil {
-		r.skip()
-		return r.peek()
 	}
 
 	return bytes[0], nil

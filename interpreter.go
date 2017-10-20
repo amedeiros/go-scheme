@@ -9,8 +9,11 @@ import (
 
 func Eval(obj object.Object, env *object.Environment) object.Object {
 	switch node := obj.(type) {
-	case *object.Boolean, *object.Char, *object.String, *object.Error, *object.Integer, *object.Lambda:
+	case *object.Boolean, *object.Char, *object.String, *object.Error, *object.Integer:
 		return obj
+	case *object.Lambda:
+		node.Env = env
+		return node
 	case *object.Identifier:
 		if val, ok := env.Get(node.Value); ok {
 			return val
@@ -67,7 +70,6 @@ func Eval(obj object.Object, env *object.Environment) object.Object {
 
 						if isError(val) {
 							return val
-
 						}
 
 						args = append(args, val)
@@ -161,6 +163,19 @@ var builtins = map[string]*object.Builtin{
 			return intObj
 		},
 	},
+	"QUOTE": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			return &object.String{Value: args[0].(*object.String).Inspect()}
+		},
+	},
+}
+
+func errorObject(err error) *object.Error {
+	return &object.Error{Value: err}
+}
+
+func newError(msg string) *object.Error {
+	return errorObject(errors.New(msg))
 }
 
 func ap(any interface{}) {
@@ -169,4 +184,21 @@ func ap(any interface{}) {
 
 func apMsg(msg string, any interface{}) {
 	fmt.Println(fmt.Printf("%s: %#v", msg, any))
+}
+
+// Load setups the inital environment and returns it
+func Load() *object.Environment {
+	env := object.NewEnvironment()
+
+	eval := &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			r := NewReader(args[0].(*object.String).Value)
+			return Eval(r.Read(), env)
+		},
+	}
+
+	builtins["EVAL"] = eval // Register this
+	env.Set("EVAL", eval)
+
+	return env
 }
