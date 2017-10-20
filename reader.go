@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/amedeiros/go-scheme/object"
@@ -89,7 +90,7 @@ func (r *Reader) Read() object.Object {
 		}
 
 		if cur != '"' {
-			panic("Missing closing \"")
+			return &object.Error{Value: errors.New("Missing closing \"")}
 		}
 
 		return &object.String{Value: str.String()}
@@ -116,12 +117,20 @@ func (r *Reader) Read() object.Object {
 		}
 
 		if peekChar == ')' {
-			return &object.Error{Value: errors.New("Unexpected closing )")}
+			r.skip()
+			return r.Read()
 		}
 
 		obj := r.Read()
 		if isError(obj) {
 			return obj
+		}
+
+		if obj.Type() == object.IDENT_OBJ {
+			ident := obj.(*object.Identifier)
+			if ident.Value == "LAMBDA" {
+				return r.readLambda()
+			}
 		}
 
 		list := &object.Cons{Car: obj}
@@ -184,9 +193,113 @@ func (r *Reader) Read() object.Object {
 		}
 
 		return r.Read()
+	case '+', '*', '/', '-':
+		return &object.Identifier{Value: string(char)}
 	default:
-		panic(fmt.Sprintf("No Clue: %#v", string(char)))
+		str := bytes.Buffer{}
+		str.WriteByte(char)
+		for {
+			char, err = r.currentByte()
+			if err != nil {
+				if err.Value.Error() == "EOF" {
+					break
+				}
+
+				return err
+			}
+
+			if isWS(char) {
+				break
+			}
+
+			if char == '(' || char == ')' {
+				err := r.unreadByte()
+				if err != nil {
+					return err
+				}
+
+				break
+			}
+
+			str.WriteByte(char)
+
+		}
+
+		i, err := strconv.ParseInt(str.String(), 0, 64)
+
+		if err != nil {
+			f, err := strconv.ParseFloat(str.String(), 64)
+
+			if err != nil {
+				return &object.Identifier{Value: strings.ToUpper(str.String())}
+			}
+
+			return &object.Float{Value: f}
+		}
+
+		return &object.Integer{Value: i}
 	}
+}
+
+func (r *Reader) readLambda() object.Object {
+	peekChar, err := r.peek()
+	if err != nil {
+		return err
+	}
+
+	if peekChar != '(' {
+		return &object.Error{Value: errors.New("Missing opening (")}
+	}
+
+	r.skip()
+	curChar, err := r.currentByte()
+	if err != nil {
+		return err
+	}
+
+	var body object.Object
+
+	if curChar == ')' {
+		// No Arguments
+		body = r.Read()
+		return &object.Lambda{Body: body}
+	}
+
+	err = r.unreadByte()
+	if err != nil {
+		return err
+	}
+
+	var arguments []*object.Identifier
+
+	for {
+		peekChar, err := r.peek()
+		if err != nil {
+			return err
+		}
+
+		if peekChar == ')' {
+			r.skip()
+			break
+		}
+
+		arg := r.Read()
+		arguments = append(arguments, arg.(*object.Identifier))
+	}
+
+	peekChar, _ = r.peek()
+
+	if peekChar == ')' {
+		r.skip()
+	}
+
+	body = r.Read()
+
+	if isError(body) {
+		return body
+	}
+
+	return &object.Lambda{Body: body, Parameters: arguments}
 }
 
 func (r *Reader) peek() (byte, *object.Error) {

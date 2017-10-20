@@ -2,23 +2,22 @@ package object
 
 import (
 	"fmt"
-
-	"github.com/amedeiros/go-scheme/parser"
 )
 
 // BuiltinFunction type
 type BuiltinFunction func(args ...Object) Object
 
 const (
-	INT_OBJ     = "INT_OBJ"
-	BUILTIN_OBJ = "BUILTIN_OBJ"
-	LAMBDA_OBJ  = "LAMBDA_OBJ"
-	BOOL_OBJ    = "BOOL_OBJ"
-	STRING_OBJ  = "STRING_OBJ"
-	ERROR_OBJ   = "ERROR_OBJ"
-	CONS_OBJ    = "CONS_OBJ"
-	CHAR_OBJ    = "CHAR_OBJ"
-	IDENT_OBJ   = "IDENT_OBJ"
+	INT_OBJ     Type = "INT_OBJ"
+	FLOAT_OBJ   Type = "FLOAT_OBJ"
+	BUILTIN_OBJ Type = "BUILTIN_OBJ"
+	LAMBDA_OBJ  Type = "LAMBDA_OBJ"
+	BOOL_OBJ    Type = "BOOL_OBJ"
+	STRING_OBJ  Type = "STRING_OBJ"
+	ERROR_OBJ   Type = "ERROR_OBJ"
+	CONS_OBJ    Type = "CONS_OBJ"
+	CHAR_OBJ    Type = "CHAR_OBJ"
+	IDENT_OBJ   Type = "IDENT_OBJ"
 )
 
 // Type represents the type of object
@@ -32,7 +31,7 @@ type Object interface {
 
 // Integer type
 type Integer struct {
-	Value int
+	Value int64
 }
 
 // Type of objcet
@@ -43,6 +42,21 @@ func (integer *Integer) Type() Type {
 // Inspect object
 func (integer *Integer) Inspect() string {
 	return fmt.Sprintf("%d", integer.Value)
+}
+
+// Float type
+type Float struct {
+	Value float64
+}
+
+// Type of objcet
+func (f *Float) Type() Type {
+	return FLOAT_OBJ
+}
+
+// Inspect object
+func (f *Float) Inspect() string {
+	return fmt.Sprintf("%f", f.Value)
 }
 
 // Builtin function
@@ -62,8 +76,8 @@ func (builtin *Builtin) Inspect() string {
 
 // Lambda represents a lambda!
 type Lambda struct {
-	Parameters []*parser.Identifier
-	Body       *parser.Cons
+	Parameters []*Identifier
+	Body       Object
 	Env        *Environment
 }
 

@@ -26,31 +26,16 @@ func main() {
 		reader := NewReader(cleanText)
 		obj := Eval(reader.Read(), env)
 
-		// for {
-		// 	if obj == nil {
-		// 		break
-		// 	}
-
 		if isError(obj) {
 			if obj.Inspect() != "EOF" {
 				fmt.Println(obj.Inspect())
 			}
-			// break
 		} else {
 			fmt.Println(obj.Inspect())
 		}
-
-		// fmt.Println(obj.Inspect())
-		// obj = reader.Read()
-		// }
 	}
 }
 
 func isError(obj object.Object) bool {
-	switch obj.(type) {
-	case *object.Error:
-		return true
-	default:
-		return false
-	}
+	return obj.Type() == object.ERROR_OBJ
 }
