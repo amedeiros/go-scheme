@@ -1,4 +1,4 @@
-package object
+package main
 
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()

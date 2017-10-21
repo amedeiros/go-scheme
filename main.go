@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/amedeiros/go-scheme/object"
 )
 
 func main() {
@@ -41,6 +39,6 @@ func main() {
 	}
 }
 
-func isError(obj object.Object) bool {
-	return obj.Type() == object.ERROR_OBJ
+func isError(obj Object) bool {
+	return obj.Type() == ERROR_OBJ
 }

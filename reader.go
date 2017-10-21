@@ -6,15 +6,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/amedeiros/go-scheme/object"
 )
 
 // TRUE is the only true value
-var TRUE = &object.Boolean{Value: true}
+var TRUE = &Boolean{Value: true}
 
 // FALSE is the only false value
-var FALSE = &object.Boolean{Value: false}
+var FALSE = &Boolean{Value: false}
 
 // EOF check for end of file
 const EOF = "EOF"
@@ -30,7 +28,7 @@ func NewReader(input string) *Reader {
 }
 
 // Read will parse and return an object on each call
-func (r *Reader) Read() object.Object {
+func (r *Reader) Read() Object {
 	char, err := r.currentByte()
 	if err != nil {
 		return err
@@ -57,7 +55,7 @@ func (r *Reader) Read() object.Object {
 			if err != nil {
 				return err
 			}
-			return &object.Char{Value: string(cur)}
+			return &Char{Value: string(cur)}
 		}
 
 		return newError(fmt.Sprintf("Expecting one of F or T or \\ found %s instead.", peekChar))
@@ -103,7 +101,7 @@ func (r *Reader) Read() object.Object {
 			return newError("Missing closing \"")
 		}
 
-		return &object.String{Value: str.String()}
+		return &String{Value: str.String()}
 	case '\'':
 		cdr := r.Read()
 
@@ -111,7 +109,7 @@ func (r *Reader) Read() object.Object {
 			return cdr
 		}
 
-		return &object.Cons{Car: &object.Identifier{Value: "QUOTE"}, Cdr: &object.Cons{Car: &object.String{Value: cdr.Inspect()}}}
+		return &Cons{Car: &Identifier{Value: "QUOTE"}, Cdr: &Cons{Car: &String{Value: cdr.Inspect()}}}
 	case '`':
 		cdr := r.Read()
 
@@ -119,7 +117,7 @@ func (r *Reader) Read() object.Object {
 			return cdr
 		}
 
-		return &object.Cons{Car: &object.Identifier{Value: "quasiquote"}, Cdr: &object.Cons{Car: cdr}}
+		return &Cons{Car: &Identifier{Value: "quasiquote"}, Cdr: &Cons{Car: cdr}}
 	case '(':
 		peekChar, err := r.peek()
 		if err != nil {
@@ -136,14 +134,14 @@ func (r *Reader) Read() object.Object {
 			return obj
 		}
 
-		if obj.Type() == object.IDENT_OBJ {
-			ident := obj.(*object.Identifier)
+		if obj.Type() == IDENT_OBJ {
+			ident := obj.(*Identifier)
 			if ident.Value == "LAMBDA" {
 				return r.readLambda()
 			}
 		}
 
-		list := &object.Cons{Car: obj}
+		list := &Cons{Car: obj}
 		lastCons := list
 
 		for {
@@ -180,8 +178,8 @@ func (r *Reader) Read() object.Object {
 					return obj
 				}
 
-				lastCons.Cdr = &object.Cons{Car: obj}
-				lastCons = lastCons.Cdr.(*object.Cons)
+				lastCons.Cdr = &Cons{Car: obj}
+				lastCons = lastCons.Cdr.(*Cons)
 			}
 		}
 
@@ -204,7 +202,7 @@ func (r *Reader) Read() object.Object {
 
 		return r.Read()
 	case '+', '*', '/', '-':
-		return &object.Identifier{Value: string(char)}
+		return &Identifier{Value: string(char)}
 	default:
 		str := bytes.Buffer{}
 		str.WriteByte(char)
@@ -232,7 +230,6 @@ func (r *Reader) Read() object.Object {
 			}
 
 			str.WriteByte(char)
-
 		}
 
 		i, err := strconv.ParseInt(str.String(), 0, 64)
@@ -241,17 +238,17 @@ func (r *Reader) Read() object.Object {
 			f, err := strconv.ParseFloat(str.String(), 64)
 
 			if err != nil {
-				return &object.Identifier{Value: strings.ToUpper(str.String())}
+				return &Identifier{Value: strings.ToUpper(str.String())}
 			}
 
-			return &object.Float{Value: f}
+			return &Float{Value: f}
 		}
 
-		return &object.Integer{Value: i}
+		return &Integer{Value: i}
 	}
 }
 
-func (r *Reader) readLambda() object.Object {
+func (r *Reader) readLambda() Object {
 	peekChar, err := r.peek()
 	if err != nil {
 		return err
@@ -267,12 +264,12 @@ func (r *Reader) readLambda() object.Object {
 		return err
 	}
 
-	var body object.Object
+	var body Object
 
 	if curChar == ')' {
 		// No Arguments
 		body = r.Read()
-		return &object.Lambda{Body: body}
+		return &Lambda{Body: body}
 	}
 
 	err = r.unreadByte()
@@ -280,7 +277,7 @@ func (r *Reader) readLambda() object.Object {
 		return err
 	}
 
-	var arguments []*object.Identifier
+	var arguments []*Identifier
 
 	for {
 		peekChar, err := r.peek()
@@ -294,7 +291,7 @@ func (r *Reader) readLambda() object.Object {
 		}
 
 		arg := r.Read()
-		arguments = append(arguments, arg.(*object.Identifier))
+		arguments = append(arguments, arg.(*Identifier))
 	}
 
 	peekChar, _ = r.peek()
@@ -309,34 +306,34 @@ func (r *Reader) readLambda() object.Object {
 		return body
 	}
 
-	return &object.Lambda{Body: body, Parameters: arguments}
+	return &Lambda{Body: body, Parameters: arguments}
 }
 
-func (r *Reader) peek() (byte, *object.Error) {
+func (r *Reader) peek() (byte, *Error) {
 	bytes, err := r.reader.Peek(1)
 
 	if err != nil {
-		return byte(1), &object.Error{Value: err}
+		return byte(1), &Error{Value: err}
 	}
 
 	return bytes[0], nil
 }
 
-func (r *Reader) currentByte() (byte, *object.Error) {
+func (r *Reader) currentByte() (byte, *Error) {
 	val, err := r.reader.ReadByte()
 
 	if err != nil {
-		return 1, &object.Error{Value: err}
+		return 1, &Error{Value: err}
 	}
 
 	return val, nil
 }
 
-func (r *Reader) unreadByte() *object.Error {
+func (r *Reader) unreadByte() *Error {
 	err := r.reader.UnreadByte()
 
 	if err != nil {
-		return &object.Error{Value: err}
+		return &Error{Value: err}
 	}
 	return nil
 }
