@@ -21,7 +21,7 @@ func main() {
 			break
 		}
 
-		reader := NewReader(cleanText)
+		reader := NewReader(text)
 		program := reader.ReadAll()
 
 		for _, obj := range program {

@@ -223,51 +223,69 @@ func (r *Reader) Read() Object {
 		}
 
 		return r.Read()
-	case '+', '*', '/', '-':
+	case '+', '*', '/', '=':
 		return &Identifier{Value: string(char)}
+	case '-':
+		return r.identOrDigit(char)
+	case ';':
+		r.consumeComment()
+		return r.Read()
 	default:
-		str := bytes.Buffer{}
-		str.WriteByte(char)
-		for {
-			char, err = r.currentByte()
-			if err != nil {
-				if err.Value.Error() == "EOF" {
-					break
-				}
+		return r.identOrDigit(char)
+	}
+}
 
+func (r *Reader) consumeComment() {
+	peekChar, _ := r.preserveWsPeek(true)
+
+	for peekChar != '\n' && peekChar != '\r' {
+		r.skip()
+		peekChar, _ = r.preserveWsPeek(true)
+	}
+}
+
+func (r *Reader) identOrDigit(char byte) Object {
+	str := bytes.Buffer{}
+	str.WriteByte(char)
+	for {
+		char, err := r.currentByte()
+		if err != nil {
+			if err.Value.Error() == EOF {
+				break
+			}
+
+			return err
+		}
+
+		if isWS(char) {
+			break
+		}
+
+		if char == '(' || char == ')' {
+			err := r.unreadByte()
+			if err != nil {
 				return err
 			}
 
-			if isWS(char) {
-				break
-			}
-
-			if char == '(' || char == ')' {
-				err := r.unreadByte()
-				if err != nil {
-					return err
-				}
-
-				break
-			}
-
-			str.WriteByte(char)
+			break
 		}
 
-		i, err := strconv.ParseInt(str.String(), 0, 64)
+		str.WriteByte(char)
+	}
+
+	i, err := strconv.ParseInt(str.String(), 0, 64)
+
+	if err != nil {
+		f, err := strconv.ParseFloat(str.String(), 64)
 
 		if err != nil {
-			f, err := strconv.ParseFloat(str.String(), 64)
-
-			if err != nil {
-				return &Identifier{Value: strings.ToUpper(str.String())}
-			}
-
-			return &Float{Value: f}
+			return &Identifier{Value: strings.ToUpper(str.String())}
 		}
 
-		return &Integer{Value: i}
+		return &Float{Value: f}
 	}
+
+	return &Integer{Value: i}
 }
 
 func (r *Reader) readLambda() Object {

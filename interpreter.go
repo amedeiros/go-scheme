@@ -11,7 +11,7 @@ const SET = "SET"
 // Eval an object
 func Eval(obj Object, env *Environment) Object {
 	switch node := obj.(type) {
-	case *Boolean, *Char, *String, *Error, *Integer:
+	case *Boolean, *Char, *String, *Error, *Integer, *Float:
 		return obj
 	case *Lambda:
 		node.Env = env
