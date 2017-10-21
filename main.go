@@ -37,5 +37,10 @@ func main() {
 }
 
 func isError(obj Object) bool {
-	return obj.Type() == ERROR_OBJ
+	switch obj.(type) {
+	case *Error:
+		return true
+	default:
+		return false
+	}
 }

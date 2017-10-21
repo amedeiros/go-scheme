@@ -156,9 +156,16 @@ func (r *Reader) Read() Object {
 			return obj
 		}
 
-		if obj.Type() == IDENT_OBJ {
-			ident := obj.(*Identifier)
-			if ident.Value == "LAMBDA" {
+		// if obj.Type() == IDENT_OBJ {
+		// 	ident := obj.(*Identifier)
+		// 	if ident.Value == "LAMBDA" {
+		// 		return r.readLambda()
+		// 	}
+		// }
+
+		switch node := obj.(type) {
+		case *Identifier:
+			if node.Value == "LAMBDA" {
 				return r.readLambda()
 			}
 		}
