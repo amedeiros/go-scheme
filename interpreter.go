@@ -60,12 +60,18 @@ func Eval(obj Object, env *Environment) Object {
 			// Check the ENV for a Lambda
 			if val, ok := env.Get(carType.Value); ok {
 				if lambda, ok := val.(*Lambda); ok {
-					args, err := evalArgs(node.Cdr.(*Cons), env)
-					if err != nil {
-						return err
+					var params []Object
+
+					if node.Cdr != nil {
+						args, err := evalArgs(node.Cdr.(*Cons), env)
+						if err != nil {
+							return err
+						}
+
+						params = args
 					}
 
-					return applyFunction(lambda, carType.Value, args)
+					return applyFunction(lambda, carType.Value, params)
 				}
 			}
 

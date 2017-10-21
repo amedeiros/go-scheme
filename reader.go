@@ -27,6 +27,28 @@ func NewReader(input string) *Reader {
 	return &Reader{bufio.NewReader(strings.NewReader(input))}
 }
 
+// ReadAll will read until it encounters an error
+func (r *Reader) ReadAll() []Object {
+	var program []Object
+
+	for {
+		obj := r.Read()
+
+		if isError(obj) {
+			err := obj.(*Error)
+			if err.Value.Error() != EOF {
+				program = append(program, err)
+			}
+
+			break
+		}
+
+		program = append(program, obj)
+	}
+
+	return program
+}
+
 // Read will parse and return an object on each call
 func (r *Reader) Read() Object {
 	char, err := r.currentByte()
@@ -76,7 +98,7 @@ func (r *Reader) Read() Object {
 				str.WriteByte(cur)
 			}
 
-			peekChar, err := r.peek()
+			peekChar, err := r.preserveWsPeek(true)
 
 			if err != nil {
 				if err.Inspect() == EOF {
@@ -269,15 +291,19 @@ func (r *Reader) readLambda() Object {
 	if curChar == ')' {
 		// No Arguments
 		body = r.Read()
+
+		curChar, _ = r.currentByte()
+
+		if curChar != ')' {
+			return newError("missing closing )")
+		}
+
 		return &Lambda{Body: body}
 	}
 
-	err = r.unreadByte()
-	if err != nil {
-		return err
-	}
-
 	var arguments []*Identifier
+
+	r.unreadByte() // Go back one or we skip the first identifier
 
 	for {
 		peekChar, err := r.peek()
@@ -286,7 +312,6 @@ func (r *Reader) readLambda() Object {
 		}
 
 		if peekChar == ')' {
-			r.skip()
 			break
 		}
 
@@ -294,13 +319,9 @@ func (r *Reader) readLambda() Object {
 		arguments = append(arguments, arg.(*Identifier))
 	}
 
-	peekChar, _ = r.peek()
-
-	if peekChar == ')' {
-		r.skip()
-	}
-
+	r.skip() // Skip closing )
 	body = r.Read()
+	r.skip() // Skip closing )
 
 	if isError(body) {
 		return body
@@ -310,10 +331,24 @@ func (r *Reader) readLambda() Object {
 }
 
 func (r *Reader) peek() (byte, *Error) {
+	return r.preserveWsPeek(false)
+}
+
+func (r *Reader) preserveWsPeek(enable bool) (byte, *Error) {
 	bytes, err := r.reader.Peek(1)
 
 	if err != nil {
-		return byte(1), &Error{Value: err}
+		return 1, &Error{Value: err}
+	}
+
+	if !enable && isWS(bytes[0]) {
+		for isWS(bytes[0]) {
+			r.skip()
+			bytes, err = r.reader.Peek(1)
+			if err != nil {
+				return 1, errorObject(err)
+			}
+		}
 	}
 
 	return bytes[0], nil

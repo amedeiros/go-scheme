@@ -22,19 +22,16 @@ func main() {
 		}
 
 		reader := NewReader(cleanText)
+		program := reader.ReadAll()
 
-		for {
-			obj := Eval(reader.Read(), env)
-
+		for _, obj := range program {
+			obj := Eval(obj, env)
 			if isError(obj) {
-				if obj.Inspect() != "EOF" {
-					fmt.Println(obj.Inspect())
-				} else {
-					break
-				}
-			} else {
 				fmt.Println(obj.Inspect())
+				break
 			}
+
+			fmt.Println(obj.Inspect())
 		}
 	}
 }
