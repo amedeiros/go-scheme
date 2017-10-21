@@ -139,7 +139,7 @@ func (r *Reader) Read() Object {
 			return cdr
 		}
 
-		return &Cons{Car: &Identifier{Value: "quasiquote"}, Cdr: &Cons{Car: cdr}}
+		return &Cons{Car: &Identifier{Value: "QUASIQUOTE"}, Cdr: &Cons{Car: cdr}}
 	case '(':
 		peekChar, err := r.peek()
 		if err != nil {
@@ -155,13 +155,6 @@ func (r *Reader) Read() Object {
 		if isError(obj) {
 			return obj
 		}
-
-		// if obj.Type() == IDENT_OBJ {
-		// 	ident := obj.(*Identifier)
-		// 	if ident.Value == "LAMBDA" {
-		// 		return r.readLambda()
-		// 	}
-		// }
 
 		switch node := obj.(type) {
 		case *Identifier:
@@ -234,6 +227,30 @@ func (r *Reader) Read() Object {
 		return &Identifier{Value: string(char)}
 	case '-':
 		return r.identOrDigit(char)
+	case '<':
+		peekChar, err := r.peek()
+		if err != nil {
+			return err
+		}
+
+		if peekChar == '=' {
+			r.skip()
+			return &Identifier{Value: "<="}
+		}
+
+		return &Identifier{Value: "<"}
+	case '>':
+		peekChar, err := r.peek()
+		if err != nil {
+			return err
+		}
+
+		if peekChar == '=' {
+			r.skip()
+			return &Identifier{Value: ">="}
+		}
+
+		return &Identifier{Value: ">"}
 	case ';':
 		r.consumeComment()
 		return r.Read()

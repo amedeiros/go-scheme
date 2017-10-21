@@ -100,68 +100,6 @@ func extendFunctionEnv(lambda *Lambda, name string, args []Object) *Environment 
 	return env
 }
 
-var scopedBuiltins = map[string]*ScopedBuiltin{}
-
-var builtins = map[string]*Builtin{
-	"+": &Builtin{
-		Fn: func(args ...Object) Object {
-			firstArg := args[0].(*Integer)
-			intObj := &Integer{Value: firstArg.Value}
-
-			for _, arg := range args[1:len(args)] {
-				intArg := arg.(*Integer)
-				intObj.Value += intArg.Value
-			}
-
-			return intObj
-		},
-	},
-	"-": &Builtin{
-		Fn: func(args ...Object) Object {
-			firstArg := args[0].(*Integer)
-			intObj := &Integer{Value: firstArg.Value}
-
-			for _, arg := range args[1:len(args)] {
-				intArg := arg.(*Integer)
-				intObj.Value -= intArg.Value
-			}
-
-			return intObj
-		},
-	},
-	"*": &Builtin{
-		Fn: func(args ...Object) Object {
-			firstArg := args[0].(*Integer)
-			intObj := &Integer{Value: firstArg.Value}
-
-			for _, arg := range args[1:len(args)] {
-				intArg := arg.(*Integer)
-				intObj.Value *= intArg.Value
-			}
-
-			return intObj
-		},
-	},
-	"/": &Builtin{
-		Fn: func(args ...Object) Object {
-			firstArg := args[0].(*Integer)
-			intObj := &Integer{Value: firstArg.Value}
-
-			for _, arg := range args[1:len(args)] {
-				intArg := arg.(*Integer)
-				intObj.Value /= intArg.Value
-			}
-
-			return intObj
-		},
-	},
-	"QUOTE": &Builtin{
-		Fn: func(args ...Object) Object {
-			return args[0].(*String)
-		},
-	},
-}
-
 func errorObject(err error) *Error {
 	return &Error{Value: err}
 }
