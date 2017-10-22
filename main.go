@@ -26,6 +26,10 @@ func main() {
 
 		for _, obj := range program {
 			obj := Eval(obj, env)
+			if obj == nil {
+				break
+			}
+
 			if isError(obj) {
 				fmt.Println(obj.Inspect())
 				break

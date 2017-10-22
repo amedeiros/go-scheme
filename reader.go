@@ -78,6 +78,25 @@ func (r *Reader) Read() Object {
 				return err
 			}
 			return &Char{Value: string(cur)}
+		} else if peekChar == "(" {
+			r.skip()
+			values := []Object{}
+
+			for {
+				peekChar, err := r.peek()
+				if err != nil {
+					return err
+				}
+
+				if peekChar == ')' {
+					r.skip()
+					break
+				}
+
+				values = append(values, r.Read())
+			}
+
+			return &Vector{Value: values}
 		}
 
 		return newError(fmt.Sprintf("Expecting one of F or T or \\ found %s instead.", peekChar))
@@ -92,6 +111,8 @@ func (r *Reader) Read() Object {
 			}
 
 			switch cur {
+			case '"':
+				return &String{Value: ""}
 			case '\n':
 				str.WriteString("\n")
 			default:
@@ -131,7 +152,13 @@ func (r *Reader) Read() Object {
 			return cdr
 		}
 
-		return &Cons{Car: &Identifier{Value: "QUOTE"}, Cdr: &Cons{Car: &String{Value: cdr.Inspect()}}}
+		switch obj := cdr.(type) {
+		case *Lambda:
+			obj.Data = true
+			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
+		default:
+			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
+		}
 	case '`':
 		cdr := r.Read()
 
@@ -139,16 +166,17 @@ func (r *Reader) Read() Object {
 			return cdr
 		}
 
-		return &Cons{Car: &Identifier{Value: "QUASIQUOTE"}, Cdr: &Cons{Car: cdr}}
+		return &Pair{Car: &Identifier{Value: "QUASIQUOTE"}, Cdr: &Pair{Car: cdr}}
 	case '(':
 		peekChar, err := r.peek()
+
 		if err != nil {
 			return err
 		}
 
 		if peekChar == ')' {
 			r.skip()
-			return r.Read()
+			return &Pair{}
 		}
 
 		obj := r.Read()
@@ -163,8 +191,8 @@ func (r *Reader) Read() Object {
 			}
 		}
 
-		list := &Cons{Car: obj}
-		lastCons := list
+		list := &Pair{Car: obj}
+		lastPair := list
 
 		for {
 			peekChar, err := r.peek()
@@ -189,7 +217,7 @@ func (r *Reader) Read() Object {
 					return obj
 				}
 
-				lastCons.Cdr = obj
+				lastPair.Cdr = obj
 			} else {
 				err := r.unreadByte()
 				if err != nil {
@@ -200,8 +228,8 @@ func (r *Reader) Read() Object {
 					return obj
 				}
 
-				lastCons.Cdr = &Cons{Car: obj}
-				lastCons = lastCons.Cdr.(*Cons)
+				lastPair.Cdr = &Pair{Car: obj}
+				lastPair = lastPair.Cdr.(*Pair)
 			}
 		}
 
@@ -214,7 +242,7 @@ func (r *Reader) Read() Object {
 			return err
 		}
 
-		// Consume white space
+		// Pairume white space
 		for isWS(peekChar) {
 			peekChar, err = r.peek()
 			if err != nil {
@@ -252,14 +280,14 @@ func (r *Reader) Read() Object {
 
 		return &Identifier{Value: ">"}
 	case ';':
-		r.consumeComment()
+		r.PairumeComment()
 		return r.Read()
 	default:
 		return r.identOrDigit(char)
 	}
 }
 
-func (r *Reader) consumeComment() {
+func (r *Reader) PairumeComment() {
 	peekChar, _ := r.preserveWsPeek(true)
 
 	for peekChar != '\n' && peekChar != '\r' {

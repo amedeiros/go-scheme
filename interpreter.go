@@ -5,13 +5,19 @@ import (
 	"fmt"
 )
 
-// SET to check for a let call
-const SET = "SET"
+// LET to check for a let call
+const LET = "LET"
+
+// Load setups the inital environment and returns it
+func Load() *Environment {
+	loadScopedBuiltins()
+	return NewEnvironment()
+}
 
 // Eval an object
 func Eval(obj Object, env *Environment) Object {
 	switch node := obj.(type) {
-	case *Boolean, *Char, *String, *Error, *Integer, *Float:
+	case *Boolean, *Char, *String, *Error, *Integer, *Float, *Vector, *Data:
 		return obj
 	case *Lambda:
 		node.Env = env
@@ -22,12 +28,12 @@ func Eval(obj Object, env *Environment) Object {
 		}
 
 		return newError(fmt.Sprintf("Unkown identifier %s", node.Value))
-	case *Cons:
+	case *Pair:
 		car := node.Car
 		switch carType := car.(type) {
 		case *Identifier:
 			if builtin, ok := builtins[carType.Value]; ok {
-				args, err := evalArgs(node.Cdr.(*Cons), env)
+				args, err := evalArgs(node.Cdr.(*Pair), env)
 				if err != nil {
 					return err
 				}
@@ -36,7 +42,7 @@ func Eval(obj Object, env *Environment) Object {
 			}
 
 			if scopedBuiltin, ok := scopedBuiltins[carType.Value]; ok {
-				args, err := evalArgs(node.Cdr.(*Cons), env)
+				args, err := evalArgs(node.Cdr.(*Pair), env)
 				if err != nil {
 					return err
 				}
@@ -44,16 +50,16 @@ func Eval(obj Object, env *Environment) Object {
 				return scopedBuiltin.Fn(env, args...)
 			}
 
-			// Builtin SET
-			if carType.Value == SET {
-				if cons, ok := node.Cdr.(*Cons); ok {
-					if car, ok := cons.Car.(*Identifier); ok {
-						val := Eval(cons.Cdr, env)
+			// Builtin LET
+			if carType.Value == LET {
+				if pair, ok := node.Cdr.(*Pair); ok {
+					if car, ok := pair.Car.(*Identifier); ok {
+						val := Eval(pair.Cdr, env)
 						env.Set(car.Value, val)
-						return val
+						return nil
 					}
 				} else {
-					return newError("Expecting cons cell")
+					return newError("Expecting Pair cell")
 				}
 			}
 
@@ -63,7 +69,7 @@ func Eval(obj Object, env *Environment) Object {
 					var params []Object
 
 					if node.Cdr != nil {
-						args, err := evalArgs(node.Cdr.(*Cons), env)
+						args, err := evalArgs(node.Cdr.(*Pair), env)
 						if err != nil {
 							return err
 						}
@@ -116,24 +122,18 @@ func apMsg(msg string, any interface{}) {
 	fmt.Println(fmt.Printf("%s: %#v", msg, any))
 }
 
-// Load setups the inital environment and returns it
-func Load() *Environment {
-	loadScopedBuiltins()
-	return NewEnvironment()
-}
-
-func evalArgs(cons *Cons, env *Environment) ([]Object, *Error) {
+func evalArgs(pair *Pair, env *Environment) ([]Object, *Error) {
 	args := []Object{}
 
 	for {
-		car := cons.Car
+		car := pair.Car
 		val := Eval(car, env)
 		if isError(val) {
 			return nil, val.(*Error)
 		}
 		args = append(args, val)
-		if cons.Cdr != nil {
-			cons = cons.Cdr.(*Cons)
+		if pair.Cdr != nil {
+			pair = pair.Cdr.(*Pair)
 		} else {
 			break
 		}
@@ -145,7 +145,7 @@ func evalArgs(cons *Cons, env *Environment) ([]Object, *Error) {
 func loadScopedBuiltins() {
 	eval := &ScopedBuiltin{
 		Fn: func(env *Environment, args ...Object) Object {
-			r := NewReader(args[0].(*String).Value)
+			r := NewReader(args[0].(*Data).Value)
 			return Eval(r.Read(), env)
 		},
 	}

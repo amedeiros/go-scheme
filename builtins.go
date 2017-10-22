@@ -279,7 +279,7 @@ var builtins = map[string]*Builtin{
 	},
 	"QUOTE": &Builtin{
 		Fn: func(args ...Object) Object {
-			return args[0].(*String)
+			return &Data{Value: args[0].Inspect()}
 		},
 	},
 }
