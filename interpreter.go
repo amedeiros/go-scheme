@@ -31,6 +31,21 @@ func Eval(obj Object, env *Environment) Object {
 	case *Pair:
 		car := node.Car
 		switch carType := car.(type) {
+		case *Lambda:
+			if node.Cdr != nil {
+				args, err := evalArgs(node.Cdr.(*Pair), env)
+				if err != nil {
+					return err
+				}
+
+				if len(args) == len(carType.Parameters) {
+					return applyFunction(carType, "#<procedure>", args)
+				}
+
+				return newError("arguments do not match")
+			}
+
+			return applyFunction(carType, "#<procedure>", []Object{})
 		case *Identifier:
 			if builtin, ok := builtins[carType.Value]; ok {
 				args, err := evalArgs(node.Cdr.(*Pair), env)
@@ -42,20 +57,23 @@ func Eval(obj Object, env *Environment) Object {
 			}
 
 			if scopedBuiltin, ok := scopedBuiltins[carType.Value]; ok {
-				args, err := evalArgs(node.Cdr.(*Pair), env)
-				if err != nil {
-					return err
+				if node.Cdr != nil {
+					args, err := evalArgs(node.Cdr.(*Pair), env)
+					if err != nil {
+						return err
+					}
+
+					return scopedBuiltin.Fn(env, args...)
 				}
 
-				return scopedBuiltin.Fn(env, args...)
+				return scopedBuiltin.Fn(env, []Object{}...)
 			}
 
 			// Builtin LET
 			if carType.Value == LET {
 				if pair, ok := node.Cdr.(*Pair); ok {
 					if car, ok := pair.Car.(*Identifier); ok {
-						val := Eval(pair.Cdr, env)
-						env.Set(car.Value, val)
+						env.Set(car.Value, pair.Cdr.(*Pair).Car)
 						return nil
 					}
 				} else {
@@ -150,5 +168,12 @@ func loadScopedBuiltins() {
 		},
 	}
 
+	env := &ScopedBuiltin{
+		Fn: func(env *Environment, args ...Object) Object {
+			return env
+		},
+	}
+
 	scopedBuiltins["EVAL"] = eval
+	scopedBuiltins["ENV"] = env
 }

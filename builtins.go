@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "reflect"
 
 var scopedBuiltins = map[string]*ScopedBuiltin{}
 
@@ -279,7 +280,36 @@ var builtins = map[string]*Builtin{
 	},
 	"QUOTE": &Builtin{
 		Fn: func(args ...Object) Object {
-			return &Data{Value: args[0].Inspect()}
+			return args[0]
+		},
+	},
+	"CALL-METHOD": &Builtin{
+		Fn: func(args ...Object) Object {
+			// methName := args[0].(*String)
+			// obj := args[1]
+			// // params := args[2:len(args)]
+			// values := reflect.ValueOf(obj).MethodByName(methName.Value).Call([]reflect.Value{})
+
+			// return &String{Value: values[0].String()}
+			if methodName, ok := args[0].(*String); ok {
+				obj := args[1]
+				values := reflect.ValueOf(obj).MethodByName(methodName.Value).Call([]reflect.Value{})
+				return &String{Value: values[0].String()}
+			}
+
+			return newError("Expecting a string as the first argument")
+		},
+	},
+	"CALL-FIELD": &Builtin{
+		Fn: func(args ...Object) Object {
+			if fieldName, ok := args[0].(*String); ok {
+				obj := args[1]
+
+				value := reflect.ValueOf(obj).FieldByName(fieldName.Value)
+				return &String{Value: value.String()}
+			}
+
+			return newError("Expecting a string as the first argument")
 		},
 	},
 }

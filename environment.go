@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()
 	env.outer = outer
@@ -27,4 +31,8 @@ func (e *Environment) Get(name string) (Object, bool) {
 func (e *Environment) Set(name string, val Object) Object {
 	e.store[name] = val
 	return val
+}
+
+func (e *Environment) Inspect() string {
+	return fmt.Sprintf("%#v", e.store)
 }

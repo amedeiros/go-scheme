@@ -155,7 +155,7 @@ func (r *Reader) Read() Object {
 		switch obj := cdr.(type) {
 		case *Lambda:
 			obj.Data = true
-			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
+			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: obj.Inspect()}}}
 		default:
 			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
 		}
