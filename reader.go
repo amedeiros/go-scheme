@@ -189,13 +189,7 @@ func (r *Reader) Read() Object {
 			if node.Value == "LAMBDA" {
 				return r.readLambda()
 			} else if node.Value == "LET" {
-				peekChar, err := r.peek()
-				if err != nil {
-					return err
-				}
-				if peekChar != '(' {
-					panic("Expecting a proper list")
-				}
+				return r.expandLet()
 			}
 		}
 
@@ -292,6 +286,68 @@ func (r *Reader) Read() Object {
 	default:
 		return r.identOrDigit(char)
 	}
+}
+
+// Let expands into a lambda call
+func (r *Reader) expandLet() Object {
+	args := []string{}
+	params := []string{}
+
+	if pair, ok := r.Read().(*Pair); ok {
+		for {
+			if first, ok := car(pair).(*Pair); ok {
+				if ident, ok := car(first).(*Identifier); ok {
+					params = append(params, ident.Inspect())
+					arg := car(cdr(first))
+					args = append(args, arg.Inspect())
+				} else {
+					pair = first
+					continue
+				}
+
+				if pair.Cdr != nil {
+					pair.Car = pair.Cdr
+				} else {
+					break
+				}
+			} else {
+				return newError("expecting a proper list")
+			}
+		}
+	} else {
+		return newError("expecting a proper list")
+	}
+
+	body := r.Read()
+	peekChar, err := r.peek()
+	if err != nil {
+		return err
+	}
+
+	if peekChar == ')' {
+		r.skip()
+	}
+
+	// Expand let into a lambda call to preserve lexical scoping
+	lambda := fmt.Sprintf("((lambda (%s) %s) %s)", strings.Join(params, " "), body.Inspect(), strings.Join(args, " "))
+	reader := NewReader(lambda)
+	return reader.Read()
+}
+
+func car(obj Object) Object {
+	if pair, ok := obj.(*Pair); ok {
+		return pair.Car
+	}
+
+	return newError("expecting a proper list")
+}
+
+func cdr(obj Object) Object {
+	if pair, ok := obj.(*Pair); ok {
+		return pair.Cdr
+	}
+
+	return newError("expecting a proper list")
 }
 
 func (r *Reader) PairumeComment() {
