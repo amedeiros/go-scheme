@@ -20,6 +20,7 @@ func Eval(obj Object, env *Environment) Object {
 		node.Env = env
 		return node
 	case *Identifier:
+		ap("?????")
 		if val, ok := env.Get(node.Value); ok {
 			return val
 		}
@@ -36,6 +37,7 @@ func Eval(obj Object, env *Environment) Object {
 				}
 
 				if len(args) == len(carType.Parameters) {
+					apMsg("ARGS: ", args)
 					return applyFunction(carType, "#<procedure>", args)
 				}
 

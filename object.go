@@ -14,6 +14,7 @@ type ScopedBuiltinFunction func(env *Environment, args ...Object) Object
 // Object interface all objects implement
 type Object interface {
 	Inspect() string
+	String() string
 }
 
 // Integer type
@@ -22,8 +23,13 @@ type Integer struct {
 }
 
 // Inspect object
-func (integer *Integer) Inspect() string {
-	return fmt.Sprintf("%d", integer.Value)
+func (i *Integer) Inspect() string {
+	return fmt.Sprintf("%d", i.Value)
+}
+
+// String object
+func (i *Integer) String() string {
+	return i.Inspect()
 }
 
 // Float type
@@ -36,14 +42,24 @@ func (f *Float) Inspect() string {
 	return fmt.Sprintf("%f", f.Value)
 }
 
+// String object
+func (f *Float) String() string {
+	return f.Inspect()
+}
+
 // Builtin function
 type Builtin struct {
 	Fn BuiltinFunction
 }
 
 // Inspect the builtin
-func (builtin *Builtin) Inspect() string {
+func (b *Builtin) Inspect() string {
 	return "<#procedure>"
+}
+
+// String for builtin
+func (b *Builtin) String() string {
+	return b.Inspect()
 }
 
 // ScopedBuiltin function
@@ -53,8 +69,13 @@ type ScopedBuiltin struct {
 }
 
 // Inspect the builtin
-func (builtin *ScopedBuiltin) Inspect() string {
+func (b *ScopedBuiltin) Inspect() string {
 	return "<#procedure>"
+}
+
+// String
+func (b *ScopedBuiltin) String() string {
+	return b.Inspect()
 }
 
 // Lambda represents a lambda!
@@ -62,24 +83,23 @@ type Lambda struct {
 	Parameters []*Identifier
 	Body       Object
 	Env        *Environment
-	Data       bool
 }
 
 // Inspect the builtin
 func (l *Lambda) Inspect() string {
-	if l.Data {
-		str := "(lambda ("
-		args := []string{}
-		for _, arg := range l.Parameters {
-			args = append(args, arg.Inspect())
-		}
-
-		str += strings.Join(args, " ") + ") "
-		str += l.Body.Inspect() + ")"
-
-		return str
+	str := "(lambda ("
+	args := []string{}
+	for _, arg := range l.Parameters {
+		args = append(args, arg.Inspect())
 	}
 
+	str += strings.Join(args, " ") + ") "
+	str += l.Body.Inspect() + ")"
+
+	return str
+}
+
+func (l *Lambda) String() string {
 	return "<#procedure>"
 }
 
@@ -95,6 +115,11 @@ func (b *Boolean) Inspect() string {
 	}
 
 	return "#F"
+}
+
+// Inspect the boolean
+func (b *Boolean) String() string {
+	return b.Inspect()
 }
 
 // String represents a string in scheme
