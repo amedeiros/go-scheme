@@ -62,17 +62,33 @@ type Lambda struct {
 	Parameters []*Identifier
 	Body       Object
 	Env        *Environment
+	Data       bool
 }
 
 // Inspect the builtin
-func (builtin *Lambda) Inspect() string {
+func (l *Lambda) Inspect() string {
+	if l.Data {
+		str := "(lambda ("
+		args := []string{}
+		for _, arg := range l.Parameters {
+			args = append(args, arg.Inspect())
+		}
+
+		str += strings.Join(args, " ") + ") "
+		str += l.Body.Inspect() + ")"
+
+		return str
+	}
+
 	return "<#procedure>"
 }
 
+// Boolean representation
 type Boolean struct {
 	Value bool
 }
 
+// Inspect the boolean
 func (b *Boolean) Inspect() string {
 	if b.Value {
 		return "#T"
@@ -81,42 +97,50 @@ func (b *Boolean) Inspect() string {
 	return "#F"
 }
 
+// String represents a string in scheme
 type String struct {
 	Value string
 }
 
+// Inspect the string
 func (s *String) Inspect() string {
-	return s.Value
+	return "\"" + s.Value + "\""
 }
 
+// Error wraps a go error
 type Error struct {
 	Value error
 }
 
+// Inspect the error
 func (e *Error) Inspect() string {
 	return e.Value.Error()
 }
 
-type Cons struct {
+// Pair represents a pair of cons cells
+type Pair struct {
 	Car Object
 	Cdr Object
 }
 
-func (c *Cons) Inspect() string {
-	if c.Cdr == nil {
-		return c.Car.Inspect()
+// Inspect the pair
+func (c *Pair) Inspect() string {
+	if c.Cdr == nil && c.Car == nil {
+		return "()"
+	} else if c.Cdr == nil {
+		return "(" + c.Car.Inspect() + ")"
 	}
 
 	switch c.Cdr.(type) {
-	case *Cons:
-		end := c.Cdr.(*Cons)
+	case *Pair:
+		end := c.Cdr.(*Pair)
 		cdr := ""
 
 		for {
 			cdr += end.Car.Inspect()
 			cdr += " "
 			if end.Cdr != nil {
-				end = end.Cdr.(*Cons)
+				end = end.Cdr.(*Pair)
 			} else {
 				break
 			}
@@ -127,18 +151,52 @@ func (c *Cons) Inspect() string {
 	}
 }
 
+// Char representation
 type Char struct {
 	Value string
 }
 
+// Inspect a char
 func (c *Char) Inspect() string {
 	return "#\\" + c.Value
 }
 
+// Identifier is a symbol
 type Identifier struct {
 	Value string
 }
 
+// Inspect the identifier
 func (i *Identifier) Inspect() string {
 	return i.Value
+}
+
+// Vector wraps a Pair
+type Vector struct {
+	Value []Object
+}
+
+// Inspect return the inspect of the Pair prepending #
+func (v *Vector) Inspect() string {
+	str := "#("
+
+	for _, obj := range v.Value {
+		str += obj.Inspect()
+		str += " "
+	}
+
+	str = strings.TrimSpace(str)
+	str += ")"
+
+	return str
+}
+
+// Data object
+type Data struct {
+	Value string
+}
+
+// Inspect the data
+func (d *Data) Inspect() string {
+	return d.Value
 }
