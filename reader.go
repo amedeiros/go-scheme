@@ -190,6 +190,8 @@ func (r *Reader) Read() Object {
 				return r.readLambda()
 			} else if node.Value == "LET" {
 				return r.expandLet()
+			} else if node.Value == "DEFINE" {
+				return r.expandDefine(node)
 			}
 		}
 
@@ -286,6 +288,39 @@ func (r *Reader) Read() Object {
 	default:
 		return r.identOrDigit(char)
 	}
+}
+
+// Expand define into something out interpreter can handle
+func (r *Reader) expandDefine(ident *Identifier) Object {
+	pair := &Pair{Car: ident}
+
+	first := r.Read()
+	switch kind := first.(type) {
+	case *Identifier:
+		value := r.Read()
+		pair.Cdr = &Pair{Car: kind, Cdr: &Pair{Car: value}}
+	case *Pair:
+		variable := car(kind)
+		params := []*Identifier{}
+
+		for {
+			param := kind.Cdr.(*Pair)
+			params = append(params, car(param).(*Identifier))
+
+			if param.Cdr != nil {
+				kind.Cdr = param.Cdr
+			} else {
+				break
+			}
+
+		}
+
+		body := r.Read()
+		lambda := &Pair{Car: &Lambda{Parameters: params, Body: body}}
+		pair.Cdr = &Pair{Car: variable, Cdr: lambda}
+	}
+
+	return pair
 }
 
 // Let expands into a lambda call
