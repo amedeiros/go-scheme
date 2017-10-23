@@ -313,3 +313,21 @@ var builtins = map[string]*Builtin{
 		},
 	},
 }
+
+func loadScopedBuiltins() {
+	eval := &ScopedBuiltin{
+		Fn: func(env *Environment, args ...Object) Object {
+			r := NewReader(args[0].(*Data).Value)
+			return Eval(r.Read(), env)
+		},
+	}
+
+	env := &ScopedBuiltin{
+		Fn: func(env *Environment, args ...Object) Object {
+			return env
+		},
+	}
+
+	scopedBuiltins["EVAL"] = eval
+	scopedBuiltins["ENV"] = env
+}

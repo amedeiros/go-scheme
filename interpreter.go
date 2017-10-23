@@ -5,9 +5,6 @@ import (
 	"fmt"
 )
 
-// LET to check for a let call
-const LET = "LET"
-
 // Load setups the inital environment and returns it
 func Load() *Environment {
 	loadScopedBuiltins()
@@ -69,18 +66,6 @@ func Eval(obj Object, env *Environment) Object {
 				return scopedBuiltin.Fn(env, []Object{}...)
 			}
 
-			// Builtin LET
-			// if carType.Value == LET {
-			// 	if pair, ok := node.Cdr.(*Pair); ok {
-			// 		if car, ok := pair.Car.(*Identifier); ok {
-			// 			env.Set(car.Value, pair.Cdr.(*Pair).Car)
-			// 			return nil
-			// 		}
-			// 	} else {
-			// 		return newError("Expecting Pair cell")
-			// 	}
-			// }
-
 			// Check the ENV for a Lambda
 			if val, ok := env.Get(carType.Value); ok {
 				if lambda, ok := val.(*Lambda); ok {
@@ -97,6 +82,13 @@ func Eval(obj Object, env *Environment) Object {
 
 					return applyFunction(lambda, carType.Value, params)
 				}
+			}
+
+			if carType.Value == "DEFINE" {
+				ident := node.Cdr.(*Pair).Car.(*Identifier)
+				value := node.Cdr.(*Pair).Cdr.(*Pair).Car
+				env.Set(ident.Value, value)
+				return nil
 			}
 
 			return newError(fmt.Sprintf("Unkown proc %s", carType.Value))
@@ -158,22 +150,4 @@ func evalArgs(pair *Pair, env *Environment) ([]Object, *Error) {
 	}
 
 	return args, nil
-}
-
-func loadScopedBuiltins() {
-	eval := &ScopedBuiltin{
-		Fn: func(env *Environment, args ...Object) Object {
-			r := NewReader(args[0].(*Data).Value)
-			return Eval(r.Read(), env)
-		},
-	}
-
-	env := &ScopedBuiltin{
-		Fn: func(env *Environment, args ...Object) Object {
-			return env
-		},
-	}
-
-	scopedBuiltins["EVAL"] = eval
-	scopedBuiltins["ENV"] = env
 }
