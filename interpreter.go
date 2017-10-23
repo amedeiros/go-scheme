@@ -70,16 +70,16 @@ func Eval(obj Object, env *Environment) Object {
 			}
 
 			// Builtin LET
-			if carType.Value == LET {
-				if pair, ok := node.Cdr.(*Pair); ok {
-					if car, ok := pair.Car.(*Identifier); ok {
-						env.Set(car.Value, pair.Cdr.(*Pair).Car)
-						return nil
-					}
-				} else {
-					return newError("Expecting Pair cell")
-				}
-			}
+			// if carType.Value == LET {
+			// 	if pair, ok := node.Cdr.(*Pair); ok {
+			// 		if car, ok := pair.Car.(*Identifier); ok {
+			// 			env.Set(car.Value, pair.Cdr.(*Pair).Car)
+			// 			return nil
+			// 		}
+			// 	} else {
+			// 		return newError("Expecting Pair cell")
+			// 	}
+			// }
 
 			// Check the ENV for a Lambda
 			if val, ok := env.Get(carType.Value); ok {

@@ -188,6 +188,14 @@ func (r *Reader) Read() Object {
 		case *Identifier:
 			if node.Value == "LAMBDA" {
 				return r.readLambda()
+			} else if node.Value == "LET" {
+				peekChar, err := r.peek()
+				if err != nil {
+					return err
+				}
+				if peekChar != '(' {
+					panic("Expecting a proper list")
+				}
 			}
 		}
 
@@ -202,6 +210,7 @@ func (r *Reader) Read() Object {
 			}
 
 			if peekChar == ')' {
+				r.skip()
 				break
 			}
 
@@ -232,8 +241,6 @@ func (r *Reader) Read() Object {
 				lastPair = lastPair.Cdr.(*Pair)
 			}
 		}
-
-		r.skip()
 
 		return list
 	case ' ', '\n', '\r', '\t':
