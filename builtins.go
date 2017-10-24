@@ -285,12 +285,6 @@ var builtins = map[string]*Builtin{
 	},
 	"CALL-METHOD": &Builtin{
 		Fn: func(args ...Object) Object {
-			// methName := args[0].(*String)
-			// obj := args[1]
-			// // params := args[2:len(args)]
-			// values := reflect.ValueOf(obj).MethodByName(methName.Value).Call([]reflect.Value{})
-
-			// return &String{Value: values[0].String()}
 			if methodName, ok := args[0].(*String); ok {
 				obj := args[1]
 				values := reflect.ValueOf(obj).MethodByName(methodName.Value).Call([]reflect.Value{})
@@ -317,8 +311,15 @@ var builtins = map[string]*Builtin{
 func loadScopedBuiltins() {
 	eval := &ScopedBuiltin{
 		Fn: func(env *Environment, args ...Object) Object {
-			r := NewReader(args[0].(*Data).Value)
-			return Eval(r.Read(), env)
+			switch kind := args[0].(type) {
+			case *Data:
+				r := NewReader(kind.Value)
+				return Eval(r.Read(), env)
+			case *String:
+				return kind
+			default:
+				return Eval(kind, env)
+			}
 		},
 	}
 

@@ -129,6 +129,11 @@ type String struct {
 
 // Inspect the string
 func (s *String) Inspect() string {
+	return s.Value
+}
+
+// String
+func (s *String) String() string {
 	return "\"" + s.Value + "\""
 }
 
@@ -139,6 +144,11 @@ type Error struct {
 
 // Inspect the error
 func (e *Error) Inspect() string {
+	return e.Value.Error()
+}
+
+// String
+func (e *Error) String() string {
 	return e.Value.Error()
 }
 
@@ -176,6 +186,11 @@ func (c *Pair) Inspect() string {
 	}
 }
 
+// String
+func (p *Pair) String() string {
+	return p.Inspect()
+}
+
 // Char representation
 type Char struct {
 	Value string
@@ -186,6 +201,11 @@ func (c *Char) Inspect() string {
 	return "#\\" + c.Value
 }
 
+// String
+func (c *Char) String() string {
+	return c.Inspect()
+}
+
 // Identifier is a symbol
 type Identifier struct {
 	Value string
@@ -194,6 +214,11 @@ type Identifier struct {
 // Inspect the identifier
 func (i *Identifier) Inspect() string {
 	return i.Value
+}
+
+// String the identifier
+func (i *Identifier) String() string {
+	return i.Inspect()
 }
 
 // Vector wraps a Pair
@@ -216,6 +241,10 @@ func (v *Vector) Inspect() string {
 	return str
 }
 
+func (v *Vector) String() string {
+	return v.Inspect()
+}
+
 // Data object
 type Data struct {
 	Value string
@@ -223,5 +252,9 @@ type Data struct {
 
 // Inspect the data
 func (d *Data) Inspect() string {
+	return d.Value
+}
+
+func (d *Data) String() string {
 	return d.Value
 }

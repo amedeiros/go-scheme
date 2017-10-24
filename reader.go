@@ -152,13 +152,7 @@ func (r *Reader) Read() Object {
 			return cdr
 		}
 
-		switch obj := cdr.(type) {
-		case *Lambda:
-			obj.Data = true
-			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: obj.Inspect()}}}
-		default:
-			return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
-		}
+		return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
 	case '`':
 		cdr := r.Read()
 
@@ -363,17 +357,7 @@ func (r *Reader) expandLet() Object {
 		r.skip()
 	}
 
-	car := car(body.(*Pair))
-
 	// Expand let into a lambda call to preserve lexical scoping
-	switch bodyType := car.(type) {
-	case *Lambda:
-		bodyType.Data = true // Treat lambda as data what a fucking hack
-		pair := body.(*Pair)
-		pair.Car = bodyType
-		body = pair
-	}
-
 	lambda := fmt.Sprintf("((lambda (%s) %s) %s)", strings.Join(params, " "), body.Inspect(), strings.Join(args, " "))
 	ap(lambda)
 	reader := NewReader(lambda)
