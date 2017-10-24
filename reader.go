@@ -277,7 +277,7 @@ func (r *Reader) Read() Object {
 
 		return &Identifier{Value: ">"}
 	case ';':
-		r.PairumeComment()
+		r.parseComment()
 		return r.Read()
 	default:
 		return r.identOrDigit(char)
@@ -359,7 +359,6 @@ func (r *Reader) expandLet() Object {
 
 	// Expand let into a lambda call to preserve lexical scoping
 	lambda := fmt.Sprintf("((lambda (%s) %s) %s)", strings.Join(params, " "), body.Inspect(), strings.Join(args, " "))
-	ap(lambda)
 	reader := NewReader(lambda)
 	return reader.Read()
 }
@@ -380,7 +379,7 @@ func cdr(obj Object) Object {
 	return newError("expecting a proper list")
 }
 
-func (r *Reader) PairumeComment() {
+func (r *Reader) parseComment() {
 	peekChar, _ := r.preserveWsPeek(true)
 
 	for peekChar != '\n' && peekChar != '\r' {
