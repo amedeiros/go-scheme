@@ -278,11 +278,6 @@ var builtins = map[string]*Builtin{
 			}
 		},
 	},
-	"QUOTE": &Builtin{
-		Fn: func(args ...Object) Object {
-			return args[0]
-		},
-	},
 	"CALL-METHOD": &Builtin{
 		Fn: func(args ...Object) Object {
 			if methodName, ok := args[0].(*String); ok {
@@ -299,11 +294,38 @@ var builtins = map[string]*Builtin{
 			if fieldName, ok := args[0].(*String); ok {
 				obj := args[1]
 
-				value := reflect.ValueOf(obj).FieldByName(fieldName.Value)
-				return &String{Value: value.String()}
+				// value := reflect.ValueOf(obj).FieldByName(fieldName.Value)
+				value := reflect.ValueOf(obj).Elem()
+				field := value.FieldByName(fieldName.Value).Interface().(Object)
+				return field
+				// return value.FieldByName(fieldName.Value)
 			}
 
 			return newError("Expecting a string as the first argument")
+		},
+	},
+	"BOOLEAN?": &Builtin{
+		Fn: func(args ...Object) Object {
+			switch args[0].(type) {
+			case *Boolean:
+				return TRUE
+			default:
+				return FALSE
+			}
+		},
+	},
+	"PAIR?": &Builtin{
+		Fn: func(args ...Object) Object {
+			switch kind := args[0].(type) {
+			case *Pair:
+				if kind.Car != nil {
+					return TRUE
+				}
+
+				return FALSE
+			default:
+				return FALSE
+			}
 		},
 	},
 }
@@ -312,12 +334,10 @@ func loadScopedBuiltins() {
 	eval := &ScopedBuiltin{
 		Fn: func(env *Environment, args ...Object) Object {
 			switch kind := args[0].(type) {
-			case *Data:
-				r := NewReader(kind.Value)
-				return Eval(r.Read(), env)
 			case *String:
 				return kind
 			default:
+				ap(kind)
 				return Eval(kind, env)
 			}
 		},

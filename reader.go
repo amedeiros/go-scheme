@@ -152,7 +152,7 @@ func (r *Reader) Read() Object {
 			return cdr
 		}
 
-		return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: &Pair{Car: &Data{Value: cdr.Inspect()}}}
+		return &Pair{Car: &Identifier{Value: "QUOTE"}, Cdr: cdr}
 	case '`':
 		cdr := r.Read()
 
