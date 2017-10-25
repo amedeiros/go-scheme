@@ -103,6 +103,25 @@ func (l *Lambda) String() string {
 	return "<#procedure>"
 }
 
+type Begin struct {
+	Body []Object
+}
+
+func (b *Begin) Inspect() string {
+	str := "(begin"
+	body := []string{}
+
+	for _, entry := range b.Body {
+		body = append(body, entry.Inspect())
+	}
+
+	return str + strings.Join(body, " ")
+}
+
+func (b *Begin) String() string {
+	return b.Inspect()
+}
+
 // Boolean representation
 type Boolean struct {
 	Value bool
@@ -111,10 +130,10 @@ type Boolean struct {
 // Inspect the boolean
 func (b *Boolean) Inspect() string {
 	if b.Value {
-		return "#T"
+		return "#t"
 	}
 
-	return "#F"
+	return "#f"
 }
 
 // Inspect the boolean
