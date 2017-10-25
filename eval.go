@@ -12,6 +12,10 @@ var GLOBAL = NewEnvironment()
 
 func Eval(code string) Object {
 	tokens := tokens(code)
+	if len(tokens) == 0 {
+		return nil
+	}
+
 	tokens = rewrite(tokens)
 	obj := parse(&tokens)
 	return eval(obj, GLOBAL)
@@ -29,6 +33,7 @@ func eval(obj Object, env *Environment) Object {
 		return newError(fmt.Sprintf("unkown identifier %s", kind.Value))
 	case *Begin:
 		var obj Object
+
 		for _, sexpression := range kind.Body {
 			obj = eval(sexpression, env)
 		}
@@ -65,7 +70,6 @@ func eval(obj Object, env *Environment) Object {
 				params := []*Identifier{}
 				body := car(cdr(cdr(kind)))
 				begin := eval(body, env).(*Begin)
-				ap(begin)
 
 				for {
 					param := car(args).(*Identifier)
@@ -77,8 +81,9 @@ func eval(obj Object, env *Environment) Object {
 					args = cdr(args).(*Pair)
 				}
 
-				apMsg("PARAMS: ", params)
 				return &Lambda{Parameters: params, Body: begin, Env: env}
+			case "+":
+				return maths(carType.Value, cdr(kind), env)
 			default:
 				// Check the env
 				if val, ok := env.Get(carType.Value); ok {
@@ -87,7 +92,8 @@ func eval(obj Object, env *Environment) Object {
 
 					for {
 						arg := car(pair)
-						args = append(args, eval(arg, env))
+						obj := eval(arg, env)
+						args = append(args, obj)
 
 						if pair.Cdr == nil {
 							break
@@ -96,13 +102,10 @@ func eval(obj Object, env *Environment) Object {
 						pair = cdr(pair).(*Pair)
 					}
 
-					apMsg("VAL: ", val)
-					apMsg("PAIR: ", pair.Inspect())
-
-					return applyFunction(val.(*Lambda), "lambda", args)
+					return applyFunction(val.(*Lambda), carType.Value, args)
 				}
 
-				return newError(fmt.Sprintf("unknown identifier %s", carType.Value))
+				return newError(fmt.Sprintf("unknown identifier %#v", carType))
 			}
 		}
 	default:
@@ -178,10 +181,15 @@ func parse(tokens *[]string) Object {
 // Lexical
 func tokens(code string) []string {
 	strippedComments := stripComments(code)
+	if strippedComments == "" {
+		return make([]string, 0)
+	}
+
 	tokens := strings.Split(
-		strings.Replace(strings.Replace(strippedComments, "(", "( ",
-			-1), ")", " )",
-			-1), " ")
+		strings.Replace(
+			strings.Replace(strings.Replace(strippedComments, "(", "( ",
+				-1), ")", " )",
+				-1), "  ", " ", -1), " ")
 
 	return tokens
 }
@@ -280,4 +288,179 @@ func ap(any interface{}) {
 
 func apMsg(msg string, any interface{}) {
 	fmt.Println(fmt.Printf("%s: %#v", msg, any))
+}
+
+func maths(op string, rest Object, env *Environment) Object {
+	first := car(rest)
+	rest = cdr(rest)
+	obj := eval(first, env)
+
+	switch op {
+	case "+":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					val += digit.Value
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Integer{Value: val}
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					val += digit.Value
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Float{Value: val}
+		}
+	case "-":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					val -= digit.Value
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Integer{Value: val}
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					val -= digit.Value
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Float{Value: val}
+		}
+	case "*":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					val *= digit.Value
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Integer{Value: val}
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					val *= digit.Value
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Float{Value: val}
+		}
+	case "/":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					val /= digit.Value
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Integer{Value: val}
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					val /= digit.Value
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return &Float{Value: val}
+		}
+	}
+
+	return newError(fmt.Sprintf("unknown operator %s", op))
 }
