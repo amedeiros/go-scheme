@@ -278,6 +278,12 @@ var builtins = map[string]*Builtin{
 			}
 		},
 	},
+	"DISPLAY": &Builtin{
+		Fn: func(args ...Object) Object {
+			fmt.Print(args[0].Inspect())
+			return nil
+		},
+	},
 	"CALL-METHOD": &Builtin{
 		Fn: func(args ...Object) Object {
 			if methodName, ok := args[0].(*String); ok {
@@ -294,11 +300,9 @@ var builtins = map[string]*Builtin{
 			if fieldName, ok := args[0].(*String); ok {
 				obj := args[1]
 
-				// value := reflect.ValueOf(obj).FieldByName(fieldName.Value)
 				value := reflect.ValueOf(obj).Elem()
 				field := value.FieldByName(fieldName.Value).Interface().(Object)
 				return field
-				// return value.FieldByName(fieldName.Value)
 			}
 
 			return newError("Expecting a string as the first argument")
@@ -323,6 +327,16 @@ var builtins = map[string]*Builtin{
 				}
 
 				return FALSE
+			default:
+				return FALSE
+			}
+		},
+	},
+	"SYMBOL?": &Builtin{
+		Fn: func(args ...Object) Object {
+			switch args[0].(type) {
+			case *Identifier:
+				return TRUE
 			default:
 				return FALSE
 			}

@@ -287,34 +287,54 @@ func (r *Reader) Read() Object {
 // Expand define into something out interpreter can handle
 func (r *Reader) expandDefine(ident *Identifier) Object {
 	pair := &Pair{Car: ident}
-
 	first := r.Read()
+
 	switch kind := first.(type) {
 	case *Identifier:
 		value := r.Read()
 		pair.Cdr = &Pair{Car: kind, Cdr: &Pair{Car: value}}
 	case *Pair:
 		variable := car(kind)
-		params := []*Identifier{}
+		params := r.readParams(kind)
+		// body := &Pair{Car: r.Read()}
+		body := r.Read()
+		lastPair := body.(*Pair)
 
 		for {
-			param := kind.Cdr.(*Pair)
-			params = append(params, car(param).(*Identifier))
-
-			if param.Cdr != nil {
-				kind.Cdr = param.Cdr
-			} else {
+			peekChar, _ := r.peek()
+			if peekChar == ')' {
 				break
 			}
 
+			obj := r.Read()
+			lastPair.Cdr = &Pair{Car: obj}
+			lastPair = lastPair.Cdr.(*Pair)
 		}
 
-		body := r.Read()
 		lambda := &Pair{Car: &Lambda{Parameters: params, Body: body}}
 		pair.Cdr = &Pair{Car: variable, Cdr: lambda}
 	}
 
+	ap(pair.Inspect())
 	return pair
+}
+
+func (r *Reader) readParams(list *Pair) []*Identifier {
+	params := []*Identifier{}
+
+	for {
+		param := list.Cdr.(*Pair)
+		params = append(params, car(param).(*Identifier))
+
+		if param.Cdr != nil {
+			list.Cdr = param.Cdr
+		} else {
+			break
+		}
+
+	}
+
+	return params
 }
 
 // Let expands into a lambda call

@@ -3,12 +3,26 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 )
 
 // Load setups the inital environment and returns it
 func Load() *Environment {
+	env := NewEnvironment()
 	loadScopedBuiltins()
-	return NewEnvironment()
+
+	b, err := ioutil.ReadFile("./lib/builtins.scm") // just pass the file name
+	if err != nil {
+		panic(err)
+	}
+
+	r := NewReader(string(b))
+	program := r.ReadAll()
+	for _, prog := range program {
+		Eval(prog, env)
+	}
+
+	return env
 }
 
 // Eval an object
@@ -105,7 +119,22 @@ func Eval(obj Object, env *Environment) Object {
 				return node
 			}
 
-			return Eval(carType, env)
+			obj = Eval(node.Cdr, env)
+			ap(obj)
+			return obj
+
+			// for {
+			// 	obj = Eval(node.Cdr, env)
+
+			// 	if node.Cdr != nil {
+			// 		node.Cdr = node.Cdr.(*Pair).Car
+			// 		ap(node.Cdr.Inspect())
+			// 	} else {
+			// 		break
+			// 	}
+			// }
+
+			// return obj
 		}
 	}
 
@@ -115,6 +144,7 @@ func Eval(obj Object, env *Environment) Object {
 func applyFunction(lambda *Lambda, name string, args []Object) Object {
 	extendedEnv := extendFunctionEnv(lambda, name, args)
 
+	// ap(lambda.Body.Inspect())
 	return Eval(lambda.Body, extendedEnv)
 }
 
