@@ -93,8 +93,8 @@ func eval(obj Object, env *Environment) Object {
 				}
 
 				return &Lambda{Parameters: params, Body: begin, Env: env}
-			case "+", "-", "*", "/":
-				return maths(carType.Value, cdr(kind), env)
+			case "+", "-", "*", "/", "<", ">", "<=", ">=", "=":
+				return mathsComparisons(carType.Value, cdr(kind), env)
 			default:
 				// Check the env
 				if val, ok := env.Get(carType.Value); ok {
@@ -318,7 +318,7 @@ func apMsg(msg string, any interface{}) {
 	fmt.Println(fmt.Printf("%s: %#v", msg, any))
 }
 
-func maths(op string, rest Object, env *Environment) Object {
+func mathsComparisons(op string, rest Object, env *Environment) Object {
 	first := car(rest)
 	rest = cdr(rest)
 	obj := eval(first, env)
@@ -487,6 +487,231 @@ func maths(op string, rest Object, env *Environment) Object {
 			}
 
 			return &Float{Value: val}
+		}
+	case "<":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					if !(val < digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					if !(val < digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		}
+	case ">":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					if !(val > digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					if !(val > digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		}
+	case "<=":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					if !(val <= digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					if !(val <= digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		}
+	case ">=":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					if !(val >= digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					if !(val >= digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		}
+	case "=":
+		switch num := obj.(type) {
+		case *Integer:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Integer); ok {
+					if !(val == digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting an integer")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
+		case *Float:
+			val := num.Value
+			for {
+				first = eval(car(rest), env)
+
+				if digit, ok := first.(*Float); ok {
+					if !(val == digit.Value) {
+						return FALSE
+					}
+				} else {
+					return newError("expecting a float")
+				}
+
+				if rest.(*Pair).Cdr != nil {
+					rest = rest.(*Pair).Cdr
+				} else {
+					break
+				}
+			}
+
+			return TRUE
 		}
 	}
 
