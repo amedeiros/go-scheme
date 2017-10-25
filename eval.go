@@ -44,6 +44,17 @@ func eval(obj Object, env *Environment) Object {
 		switch carType := carNode.(type) {
 		case *Identifier:
 			switch carType.Value {
+			case "display":
+				val := eval(car(cdr(kind)), env)
+				fmt.Println(val.String())
+				return nil
+			case "quote":
+				val := cdr(kind).(*Pair)
+				if val.Car == nil {
+					return &Pair{}
+				}
+
+				return val.Car
 			case "begin":
 				pair := cdr(kind).(*Pair)
 				body := []Object{}
@@ -82,7 +93,7 @@ func eval(obj Object, env *Environment) Object {
 				}
 
 				return &Lambda{Parameters: params, Body: begin, Env: env}
-			case "+":
+			case "+", "-", "*", "/":
 				return maths(carType.Value, cdr(kind), env)
 			default:
 				// Check the env
@@ -187,9 +198,10 @@ func tokens(code string) []string {
 
 	tokens := strings.Split(
 		strings.Replace(
-			strings.Replace(strings.Replace(strippedComments, "(", "( ",
-				-1), ")", " )",
-				-1), "  ", " ", -1), " ")
+			strings.Replace(
+				strings.Replace(strings.Replace(strippedComments, "(", "( ",
+					-1), ")", " )",
+					-1), "  ", " ", -1), "'", "' ", -1), " ")
 
 	return tokens
 }
@@ -237,7 +249,7 @@ func rewrite(values []string) []string {
 
 			sp++
 
-			for values[sp] != ")" {
+			for len(values) > sp {
 				body = append(body, values[sp])
 				sp++
 			}
@@ -250,11 +262,27 @@ func rewrite(values []string) []string {
 			for _, v := range lambdaTokens {
 				rewritten = append(rewritten, v)
 			}
+		} else if token == "'" {
+			rewritten = append(rewritten, "(")
+			rewritten = append(rewritten, "quote")
+
+			if values[sp] != "(" {
+				rewritten = append(rewritten, values[sp])
+				rewritten = append(rewritten, ")")
+				sp++
+			} else {
+				for values[sp] != ")" {
+					rewritten = append(rewritten, values[sp])
+					sp++
+				}
+
+				rewritten = append(rewritten, ")")
+			}
 		} else {
 			rewritten = append(rewritten, token)
 		}
 	}
-
+	rewritten = tokens(strings.Join(rewritten, " "))
 	return rewritten
 }
 
