@@ -36,3 +36,7 @@ func (e *Environment) Set(name string, val Object) Object {
 func (e *Environment) Inspect() string {
 	return fmt.Sprintf("%#v", e.store)
 }
+
+func (e *Environment) String() string {
+	return e.Inspect()
+}

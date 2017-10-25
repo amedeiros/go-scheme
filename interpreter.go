@@ -3,18 +3,32 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 )
 
 // Load setups the inital environment and returns it
 func Load() *Environment {
+	env := NewEnvironment()
 	loadScopedBuiltins()
-	return NewEnvironment()
+
+	b, err := ioutil.ReadFile("./lib/builtins.scm") // just pass the file name
+	if err != nil {
+		panic(err)
+	}
+
+	r := NewReader(string(b))
+	program := r.ReadAll()
+	for _, prog := range program {
+		Eval(prog, env)
+	}
+
+	return env
 }
 
 // Eval an object
 func Eval(obj Object, env *Environment) Object {
 	switch node := obj.(type) {
-	case *Boolean, *Char, *String, *Error, *Integer, *Float, *Vector, *Data:
+	case *Boolean, *Char, *String, *Error, *Integer, *Float, *Vector:
 		return obj
 	case *Lambda:
 		node.Env = env
@@ -29,6 +43,8 @@ func Eval(obj Object, env *Environment) Object {
 		car := node.Car
 		switch carType := car.(type) {
 		case *Lambda:
+			carType.Env = env
+
 			if node.Cdr != nil {
 				args, err := evalArgs(node.Cdr.(*Pair), env)
 				if err != nil {
@@ -44,6 +60,17 @@ func Eval(obj Object, env *Environment) Object {
 
 			return applyFunction(carType, "#<procedure>", []Object{})
 		case *Identifier:
+			if carType.Value == "DEFINE" {
+				ident := node.Cdr.(*Pair).Car.(*Identifier)
+				value := node.Cdr.(*Pair).Cdr.(*Pair).Car
+				env.Set(ident.Value, value)
+				return nil
+			}
+
+			if carType.Value == "QUOTE" {
+				return node.Cdr
+			}
+
 			if builtin, ok := builtins[carType.Value]; ok {
 				args, err := evalArgs(node.Cdr.(*Pair), env)
 				if err != nil {
@@ -80,20 +107,34 @@ func Eval(obj Object, env *Environment) Object {
 						params = args
 					}
 
+					lambda.Env = env
 					return applyFunction(lambda, carType.Value, params)
 				}
 			}
 
-			if carType.Value == "DEFINE" {
-				ident := node.Cdr.(*Pair).Car.(*Identifier)
-				value := node.Cdr.(*Pair).Cdr.(*Pair).Car
-				env.Set(ident.Value, value)
-				return nil
-			}
-
 			return newError(fmt.Sprintf("Unkown proc %s", carType.Value))
 		default:
-			return Eval(carType, env)
+			// Empty Pair
+			if carType == nil {
+				return node
+			}
+
+			obj = Eval(node.Cdr, env)
+			ap(obj)
+			return obj
+
+			// for {
+			// 	obj = Eval(node.Cdr, env)
+
+			// 	if node.Cdr != nil {
+			// 		node.Cdr = node.Cdr.(*Pair).Car
+			// 		ap(node.Cdr.Inspect())
+			// 	} else {
+			// 		break
+			// 	}
+			// }
+
+			// return obj
 		}
 	}
 
@@ -103,6 +144,7 @@ func Eval(obj Object, env *Environment) Object {
 func applyFunction(lambda *Lambda, name string, args []Object) Object {
 	extendedEnv := extendFunctionEnv(lambda, name, args)
 
+	// ap(lambda.Body.Inspect())
 	return Eval(lambda.Body, extendedEnv)
 }
 

@@ -31,11 +31,11 @@ func main() {
 			}
 
 			if isError(obj) {
-				fmt.Println(obj.Inspect())
+				fmt.Println(obj.String())
 				break
 			}
 
-			fmt.Println(obj.Inspect())
+			fmt.Println(obj.String())
 		}
 	}
 }
